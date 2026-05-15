@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>異種伝言ゲーム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ==================== タイトル画面 ==================== -->
+    <div id="titleScreen" class="screen active">
+
+      <div class="title-emoji">🎭</div>
+
+      <div>
+        <h1 class="title-logo">異種伝言ゲーム</h1>
+        <p class="title-sub">ishu_dengon</p>
+      </div>
+
+      <div class="settings-panel">
+
+        <!-- 人数設定 -->
+        <div class="setting-row">
+          <p class="setting-label">👥 プレイ人数</p>
+          <div class="toggle-group" id="playerCount">
+            <button class="toggle-btn" data-value="2">2人</button>
+            <button class="toggle-btn active" data-value="3">3人</button>
+            <button class="toggle-btn" data-value="4">4人</button>
+            <button class="toggle-btn" data-value="5">5人</button>
+          </div>
+        </div>
+
+        <!-- 難易度設定 -->
+        <div class="setting-row">
+          <p class="setting-label">⚡ 難易度</p>
+          <div class="toggle-group" id="difficulty">
+            <button class="toggle-btn" data-value="easy">やさしい</button>
+            <button class="toggle-btn active" data-value="normal">ふつう</button>
+            <button class="toggle-btn" data-value="hard">むずかしい</button>
+          </div>
+        </div>
+
+        <!-- 音量設定 -->
+        <div class="setting-row">
+          <p class="setting-label">🔊 音量</p>
+          <div class="volume-row">
+            <span>🔇</span>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.7">
+            <span>🔊</span>
+          </div>
+        </div>
+
+        <!-- APIキー設定 -->
+        <div class="setting-row">
+          <p class="setting-label">🤖 Anthropic APIキー <span style="font-size:0.7rem;color:#e74c3c;">(AI変換に必要)</span></p>
+          <input type="password" id="apiKeyInput" class="api-key-input"
+            placeholder="sk-ant-..." autocomplete="off">
+          <p class="api-key-hint">
+            ※ APIキーは端末内にのみ保存され、外部には送信されません。<br>
+            AIアクションを使わない場合は空欄でも遊べます。
+          </p>
+        </div>
+
+      </div>
+
+      <button class="btn btn-start" id="startBtn">ゲームスタート ▶</button>
+
+    </div><!-- /titleScreen -->
+
+
+    <!-- ==================== ゲームプレイ画面 ==================== -->
+    <div id="gameScreen" class="screen">
+
+      <!-- ヘッダー -->
+      <div class="player-header">
+        <div class="player-badge" id="playerBadge">1人目</div>
+        <div class="player-progress" id="progressDots"></div>
+      </div>
+
+      <!-- メインコンテンツ（動的に切り替え） -->
+      <div class="game-content" id="gameContent">
+        <!-- ui.js が動的に描画 -->
+      </div>
+
+    </div><!-- /gameScreen -->
+
+
+    <!-- ==================== リザルト画面 ==================== -->
+    <div id="resultScreen" class="screen">
+
+      <!-- 結果ヘッダー -->
+      <div class="result-header">
+        <div class="result-emoji" id="resultEmoji">🎉</div>
+        <h2 class="result-title correct" id="resultTitle">正解！</h2>
+        <p class="result-topic">お題：<span id="resultTopicText"></span></p>
+      </div>
+
+      <!-- アクション履歴 -->
+      <div class="action-history">
+        <p class="history-title">📋 各プレイヤーのアクション</p>
+        <div id="actionHistory">
+          <!-- ui.js が動的に描画 -->
+        </div>
+      </div>
+
+      <!-- ボタン -->
+      <div class="result-buttons">
+        <button class="btn btn-primary" id="replayBtn">もう一度遊ぶ 🔄</button>
+        <button class="btn btn-secondary" id="continueBtn">同じ設定で続ける ▶</button>
+      </div>
+
+    </div><!-- /resultScreen -->
+
+  </div><!-- /app -->
+
+  <!-- ===== スクリプト読み込み ===== -->
+  <script src="config.js"></script>
+  <script src="topics.js"></script>
+  <script src="game.js"></script>
+  <script src="actions/ai-transform.js"></script>
+  <script src="actions/drawing.js"></script>
+  <script src="actions/shapes.js"></script>
+  <script src="actions/verbal.js"></script>
+  <script src="ui.js"></script>
+
+  <!-- ===== 初期化 ===== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // タイトル画面の初期化
+      initTitleScreen();
+
+      // リザルト画面のボタン
+      document.getElementById('replayBtn').addEventListener('click', () => {
+        SoundManager.playClick();
+        showScreen('titleScreen');
+      });
+
+      document.getElementById('continueBtn').addEventListener('click', () => {
+        SoundManager.playClick();
+        startGame();
+      });
+    });
+  </script>
+</body>
+</html>
