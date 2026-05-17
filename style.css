@@ -9,18 +9,26 @@
   --primary-dark: #e55a27;
   --secondary: #4ecdc4;
   --accent: #ffe66d;
+  
+  /* ネオ・ブル風にメリハリをつけるため背景と表面の色を調整 */
   --bg: #1a1a2e;
   --bg2: #16213e;
-  --surface: #0f3460;
+  --surface: #102244;       /* 少し明るくして黒枠を引き立たせる */
   --surface2: #1a3a5c;
   --text: #e8e8f0;
   --text-dim: #8888aa;
   --success: #2ecc71;
   --danger: #e74c3c;
   --warning: #f39c12;
-  --border-radius: 16px;
-  --shadow: 0 8px 32px rgba(0,0,0,0.4);
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius: 0px;      /* 特徴1: ネオ・ブルに合わせて角丸をシャープに(0px) */
+  
+  /* 特徴2: ぼかさないクッキリとした3D影 */
+  --border-color: #000000;
+  --shadow-main: 6px 6px 0px 0px #000000;
+  --shadow-btn: 5px 5px 0px 0px #000000;
+  --shadow-small: 3px 3px 0px 0px #000000;
+  
+  --transition: all 0.08s ease; /* 押し込みのレスポンスを高めるために高速化 */
 }
 
 /* ===== リセット ===== */
@@ -112,7 +120,7 @@ body::before {
   50% { transform: translateY(-8px); }
 }
 
-/* ===== 設定パネル ===== */
+/* ===== 設定パネル (ネオ・ブル太枠・クッキリ影化) ===== */
 .settings-panel {
   background: var(--surface);
   border-radius: var(--border-radius);
@@ -122,8 +130,9 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255,255,255,0.06);
+  /* 変更: 太い黒枠とぼかさないドロップシャドウに変更 */
+  border: 3px solid var(--border-color);
+  box-shadow: var(--shadow-main);
 }
 
 .setting-row {
@@ -140,7 +149,7 @@ body::before {
   letter-spacing: 0.1em;
 }
 
-/* 人数・難易度トグル */
+/* 人数・難易度トグル (枠線強化＆沈み込みキープ) */
 .toggle-group {
   display: flex;
   gap: 8px;
@@ -151,23 +160,31 @@ body::before {
   flex: 1;
   min-width: 44px;
   padding: 10px 8px;
-  border: 2px solid rgba(255,255,255,0.1);
   background: var(--surface2);
   color: var(--text-dim);
-  border-radius: 12px;
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: var(--transition);
   text-align: center;
+  /* 変更: 太い黒枠、丸みを無くし、3D影を付与 */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-small);
+  position: relative;
+  top: 0;
+  left: 0;
 }
 
+/* アクティブ（選択中）：影を消して、影の分(3px)だけ右下に押し込みキープ */
 .toggle-btn.active {
-  border-color: var(--primary);
+  border-color: var(--border-color);
   background: var(--primary);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(255,107,53,0.4);
+  top: 3px;
+  left: 3px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
 }
 
 /* 音量スライダー */
@@ -182,10 +199,11 @@ body::before {
 input[type=range] {
   flex: 1;
   -webkit-appearance: none;
-  height: 6px;
+  height: 8px;
   background: var(--surface2);
-  border-radius: 3px;
   outline: none;
+  /* 変更: スライダーの溝もネオ・ブル化 */
+  border: 2px solid var(--border-color);
 }
 
 input[type=range]::-webkit-slider-thumb {
@@ -193,9 +211,11 @@ input[type=range]::-webkit-slider-thumb {
   width: 22px;
   height: 22px;
   background: var(--primary);
-  border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255,107,53,0.5);
+  /* 変更: ツマミを四角い黒枠にして3D影を追加 */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px var(--border-color);
 }
 
 /* APIキー入力 */
@@ -203,24 +223,27 @@ input[type=range]::-webkit-slider-thumb {
   width: 100%;
   padding: 10px 14px;
   background: var(--surface2);
-  border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
   color: var(--text);
   font-family: monospace;
   font-size: 0.8rem;
   outline: none;
   transition: var(--transition);
+  /* 変更: 四角い太枠と影へ */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-small);
 }
-.api-key-input:focus { border-color: var(--secondary); }
+.api-key-input:focus { 
+  border-color: var(--secondary); 
+  box-shadow: 4px 4px 0px 0px var(--border-color);
+}
 .api-key-hint { font-size: 0.72rem; color: var(--text-dim); }
 
-/* ===== ボタン ===== */
+/* ===== ボタン (完全なる3D押し込みアニメーション化) ===== */
 .btn {
   display: block;
   width: 100%;
   padding: 16px;
-  border: none;
-  border-radius: var(--border-radius);
   font-family: inherit;
   font-size: 1.05rem;
   font-weight: 800;
@@ -228,45 +251,77 @@ input[type=range]::-webkit-slider-thumb {
   transition: var(--transition);
   text-align: center;
   letter-spacing: 0.04em;
+  /* 変更: すべて共通で太い黒枠、角を立たせ、位置調整用にrelativeを付与 */
+  border-radius: 0px;
+  border: 3px solid var(--border-color) !important;
+  position: relative;
+  top: 0;
+  left: 0;
 }
 
-.btn:active { transform: scale(0.97); }
+/* ボタンをホバー・クリックした時のスケールを無効化し、影の方向への移動に変更 */
+.btn:active { transform: none; }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
-  box-shadow: 0 6px 24px rgba(255,107,53,0.4);
+  box-shadow: var(--shadow-btn);
 }
-.btn-primary:hover { box-shadow: 0 8px 32px rgba(255,107,53,0.6); }
+.btn-primary:active {
+  top: 5px;
+  left: 5px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
+}
 
 .btn-secondary {
   background: var(--surface);
   color: var(--text);
-  border: 2px solid rgba(255,255,255,0.1);
+  box-shadow: var(--shadow-btn);
+}
+.btn-secondary:active {
+  top: 5px;
+  left: 5px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
 }
 
 .btn-success {
   background: linear-gradient(135deg, var(--success), #27ae60);
   color: #fff;
-  box-shadow: 0 6px 24px rgba(46,204,113,0.4);
+  box-shadow: var(--shadow-btn);
+}
+.btn-success:active {
+  top: 5px;
+  left: 5px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
 }
 
 .btn-danger {
   background: linear-gradient(135deg, var(--danger), #c0392b);
   color: #fff;
-  box-shadow: 0 6px 24px rgba(231,76,60,0.4);
+  box-shadow: var(--shadow-btn);
+}
+.btn-danger:active {
+  top: 5px;
+  left: 5px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
 }
 
+/* ゲームスタートボタン */
 .btn-start {
   background: linear-gradient(135deg, var(--accent), #f39c12);
   color: #1a1a2e;
   font-size: 1.2rem;
-  box-shadow: 0 8px 32px rgba(255,230,109,0.4);
-  border-radius: 20px;
   max-width: 320px;
+  border-radius: 0px; /* ネオ・ブル化 */
+  box-shadow: var(--shadow-btn);
+}
+.btn-start:active {
+  top: 5px;
+  left: 5px;
+  box-shadow: 0px 0px 0px 0px var(--border-color);
 }
 
-/* ===== ゲームプレイ画面 ===== */
+/* ===== ゲームプレイ画面 (ヘッダーと大枠のみ変更。中身のアクションUIは保持) ===== */
 #gameScreen {
   gap: 0;
   padding: 0;
@@ -276,7 +331,8 @@ input[type=range]::-webkit-slider-thumb {
   background: linear-gradient(135deg, var(--surface), var(--surface2));
   padding: 20px 16px 16px;
   text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  /* 変更: ヘッダーの境界線を太くクッキリと */
+  border-bottom: 3px solid var(--border-color);
 }
 
 .player-badge {
@@ -285,11 +341,14 @@ input[type=range]::-webkit-slider-thumb {
   gap: 8px;
   background: var(--primary);
   color: #fff;
-  border-radius: 20px;
   padding: 6px 16px;
   font-size: 0.9rem;
   font-weight: 800;
   margin-bottom: 8px;
+  /* 変更: バッジもネオ・ブル枠線とミニ影化 */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-small);
 }
 
 .player-progress {
@@ -300,21 +359,24 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .progress-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
   background: var(--surface2);
-  border: 2px solid rgba(255,255,255,0.1);
   transition: var(--transition);
+  /* 変更: 進捗ドットも四角いクッキリ枠へ */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
 }
-.progress-dot.done { background: var(--success); border-color: var(--success); }
-.progress-dot.current { background: var(--primary); border-color: var(--primary); }
+.progress-dot.done { background: var(--success); border-color: var(--border-color); }
+.progress-dot.current { background: var(--primary); border-color: var(--border-color); }
 
 .game-content {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
 }
+
+/* ⚠️ これ以降の各種ゲームアクションUI（.action-card、お絵描き、AI表示、図形、お題など）は一切スタイルを書き換えずオリジナルのまま保持しています */
 
 /* ===== プレイヤー確認画面 ===== */
 .player-confirm {
@@ -395,7 +457,7 @@ input[type=range]::-webkit-slider-thumb {
 .action-card {
   background: var(--surface);
   border: 2px solid rgba(255,255,255,0.06);
-  border-radius: var(--border-radius);
+  border-radius: 16px; /* 16pxのまま保持 */
   padding: 20px 12px;
   text-align: center;
   cursor: pointer;
@@ -454,7 +516,7 @@ input[type=range]::-webkit-slider-thumb {
 /* ===== AI変換 ===== */
 .ai-result-box {
   background: var(--surface2);
-  border-radius: var(--border-radius);
+  border-radius: 16px; /* 保持 */
   padding: 20px;
   min-height: 100px;
   display: flex;
@@ -687,7 +749,7 @@ input[type=color] {
   font-weight: 700;
 }
 
-/* ===== リザルト画面 ===== */
+/* ===== リザルト画面 (枠線とメインボタンのみ拡張) ===== */
 #resultScreen {
   gap: 20px;
 }
@@ -727,7 +789,7 @@ input[type=color] {
   font-size: 1.1rem;
 }
 
-/* アクション履歴 */
+/* アクション履歴 (ネオ・ブル外枠化) */
 .action-history {
   display: flex;
   flex-direction: column;
@@ -745,9 +807,12 @@ input[type=color] {
 
 .history-item {
   background: var(--surface);
-  border-radius: 12px;
   padding: 14px;
-  border-left: 3px solid var(--primary);
+  border-left: 4px solid var(--primary);
+  /* 変更: 履歴カード自体の外枠を黒線化 */
+  border-radius: 0px;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-small);
 }
 
 .history-player {
@@ -782,7 +847,7 @@ input[type=color] {
 .result-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px; /* ボタン同士が重ならないよう少し隙間を拡張 */
   padding-top: 8px;
 }
 
