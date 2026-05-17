@@ -427,7 +427,8 @@ input[type=range]::-webkit-slider-thumb {
   text-align: center;
 }
 .confirm-icon { font-size: 4rem; }
-.confirm-title { font-family: 'Zen Kurenaido', serif; font-size: 1.6rem; font-weight: 700; }
+.confirm-title { font-family: 'Zen Kurenaido', serif; font-size: 1.6rem; font-weight: 700;
+  color: #ff9966; }
 .private-warning {
   background: rgba(255,107,53,0.15);
   border: 2px solid var(--border-color);
