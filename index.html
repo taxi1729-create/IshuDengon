@@ -7,7 +7,196 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>異種伝言ゲーム</title>
-  <link rel="stylesheet" href="style.css">
+
+  <!-- ★枠線、全体の背景、ボタンのみをネオ・ブル風に限定適用 -->
+  <style>
+    :root {
+      --bg-color: #f5f0e8;       /* 全体の背景色 */
+      --border-color: #000000;   /* クッキリした黒枠 */
+      --border-thick: 4px;       /* 枠線の太さ */
+      --primary-color: #FFDE4D;  /* スタートボタン（黄） */
+      --accent-green: #6BCB77;   /* 戻るボタン（緑） */
+      --accent-blue: #4D96FF;    /* 続けるボタン（青） */
+    }
+
+    /* 1. 全体の背景とメインコンテナの枠線・影 */
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: sans-serif;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 500px;
+      background: #FFFFFF;
+      /* アプリ全体のクッキリした黒枠と3D影 */
+      border: var(--border-thick) solid var(--border-color);
+      box-shadow: 8px 8px 0px 0px var(--border-color);
+      padding: 25px;
+    }
+
+    /* 画面切り替えの基本制御（触らない） */
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    /* ロゴの回転用アニメーション（触らない） */
+    .title-logo-img {
+      display: block;
+      width: 80%;
+      margin: 0 auto;
+      max-height: 120px;
+      object-fit: contain;
+      cursor: pointer;
+    }
+    .spinning {
+      animation: spinOnce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes spinOnce {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .title-sub {
+      text-align: center;
+      margin: 5px 0 25px 0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* 2. 設定パネル内のトグルボタン（人数・難易度）の枠と押し込み */
+    .settings-panel {
+      margin-bottom: 25px;
+    }
+    .setting-row {
+      margin-bottom: 20px;
+    }
+    .setting-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 10px;
+      background-color: #FFFFFF;
+      font-weight: bold;
+      cursor: pointer;
+      /* ネオ・ブル枠線 */
+      border: 2px solid var(--border-color);
+      box-shadow: 3px 3px 0px 0px var(--border-color);
+      position: relative;
+      top: 0;
+      left: 0;
+      transition: all 0.05s ease;
+    }
+    /* 選択中のトグル：押し込まれた状態をキープ */
+    .toggle-btn.active {
+      background-color: var(--primary-color);
+      top: 3px;
+      left: 3px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* 音量スライダーとAPI入力の最低限の黒枠化 */
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="range"] {
+      flex: 1;
+    }
+    .api-key-input {
+      width: 100%;
+      padding: 8px;
+      border: 2px solid var(--border-color);
+      box-shadow: 2px 2px 0px var(--border-color);
+    }
+    .api-key-hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+
+    /* 3. 各画面の下部にあるメインボタンの「3D押し込み」 */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #000000;
+      cursor: pointer;
+      text-align: center;
+      /* 共通の太枠 */
+      border: var(--border-thick) solid var(--border-color);
+      position: relative;
+      top: 0;
+      left: 0;
+      transition: all 0.08s ease;
+    }
+
+    /* ゲームスタートボタン (黄) */
+    .btn-start {
+      background-color: var(--primary-color);
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+    }
+    .btn-start:active {
+      top: 5px;
+      left: 5px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* タイトルに戻るボタン (緑) */
+    .btn-primary {
+      background-color: var(--accent-green);
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+      margin-bottom: 12px;
+    }
+    .btn-primary:active {
+      top: 5px;
+      left: 5px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* 同じ設定で続けるボタン (青) */
+    .btn-secondary {
+      background-color: var(--accent-blue);
+      color: #000000;
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+    }
+    .btn-secondary:active {
+      top: 5px;
+      left: 5px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* 4. ゲームプレイ画面・リザルトの「大枠」のみをネオ・ブル化（中身のUIは変更しない） */
+    .player-header {
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .result-header, .action-history {
+      border: 2px solid var(--border-color);
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #fdfdfd;
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -15,7 +204,7 @@
     <!-- ==================== タイトル画面 ==================== -->
     <div id="titleScreen" class="screen active">
 
-      <!-- タイトルロゴ画像：title_logo.png をこのフォルダに置いてください -->
+      <!-- タイトルロゴ画像 -->
       <img
         src="title_logo.PNG"
         alt="異種伝言ゲーム"
@@ -87,7 +276,7 @@
 
       <!-- メインコンテンツ（動的に切り替え） -->
       <div class="game-content" id="gameContent">
-        <!-- ui.js が動的に描画 -->
+        <!-- ui.js が動的に描画（ここ自体のUIスタイルは書き換えていません） -->
       </div>
 
     </div><!-- /gameScreen -->
@@ -145,7 +334,6 @@
         SoundManager.playClick();
         logoImg.classList.add('spinning');
         logoImg.addEventListener('animationend', function handler(e) {
-          // spinOnce が終わったタイミングだけ除去
           if (e.animationName === 'spinOnce') {
             logoImg.classList.remove('spinning');
             logoImg.removeEventListener('animationend', handler);
