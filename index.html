@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#1a1a2e"> <!-- 背景色に合わせてダークカラーに変更 -->
+  <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>異種伝言ゲーム</title>
@@ -15,10 +15,15 @@
     <!-- ==================== タイトル画面 ==================== -->
     <div id="titleScreen" class="screen active">
 
-      <!-- 修正: 画像タグからCSSアニメーションが適用されるテキスト形式へ変更 -->
-      <div class="title-container" id="titleLogoContainer" style="cursor: pointer;">
-        <div class="title-emoji">🔄</div>
-        <h1 class="title-logo">異種伝言ゲーム</h1>
+      <!-- 画像ロゴと回転アニメーション用の構造を完全維持 -->
+      <div class="title-logo-wrap">
+        <img
+          src="title_logo.PNG"
+          alt="異種伝言ゲーム"
+          class="title-logo-img"
+          id="titleLogoImg"
+          draggable="false"
+        >
         <p class="title-sub">ishu_dengon</p>
       </div>
 
@@ -134,17 +139,19 @@
       // タイトル画面の初期化
       initTitleScreen();
 
-      // 修正: ロゴの要素変更に伴い、クリックイベントのターゲットをテキストコンテナに変更
-      const logoContainer = document.getElementById('titleLogoContainer');
-      logoContainer.addEventListener('click', () => {
+      // ロゴタップで一回転（完全復活）
+      const logoImg = document.getElementById('titleLogoImg');
+      logoImg.addEventListener('click', () => {
+        if (logoImg.classList.contains('spinning')) return;
         SoundManager.init();
         SoundManager.playClick();
-        
-        // テキスト文字を少し弾ませる簡易エフェクト
-        logoContainer.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          logoContainer.style.transform = 'none';
-        }, 100);
+        logoImg.classList.add('spinning');
+        logoImg.addEventListener('animationend', function handler(e) {
+          if (e.animationName === 'spinOnce') {
+            logoImg.classList.remove('spinning');
+            logoImg.removeEventListener('animationend', handler);
+          }
+        });
       });
 
       // リザルト画面のボタン
