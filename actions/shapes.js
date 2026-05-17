@@ -4,7 +4,9 @@ const SHAPE_TYPES = ['triangle', 'diamond', 'circle', 'square', 'star', 'hexagon
 const SHAPE_COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#34495e','#ffffff','#000000'];
 const SHAPE_LABELS = { triangle:'▲三角形', diamond:'◆菱形', circle:'●円', square:'■正方形', star:'★星形', hexagon:'⬡六角形' };
 
-function renderShapesAction(container, topic, onComplete) {
+function renderShapesAction(container, topic, previousData, onComplete) {
+  // 旧シグネチャ互換
+  if (typeof previousData === 'function') { onComplete = previousData; previousData = null; }
   container.innerHTML = `
     <div class="action-container shapes-action">
       <h2 class="action-title">🔷 抽象図形</h2>
@@ -23,6 +25,7 @@ function renderShapesAction(container, topic, onComplete) {
       <p class="shape-hint">図形をタップで選択 → 色変更 | ドラッグで移動 | 長押しで削除</p>
 
       <button class="btn btn-primary" id="shapesDoneBtn">完成！次の人へ渡す ▶</button>
+      <button class="btn btn-reselect" id="shapesReselectBtn">↩ アクションを選び直す</button>
     </div>
   `;
 
@@ -215,6 +218,14 @@ function renderShapesAction(container, topic, onComplete) {
   document.getElementById('shapesDoneBtn').onclick = () => {
     const imageData = canvas.toDataURL('image/png');
     onComplete({ imageData, shapes: JSON.parse(JSON.stringify(shapes)) });
+  };
+
+  // 選び直し
+  document.getElementById('shapesReselectBtn').onclick = () => {
+    if (typeof renderActionSelect === 'function') {
+      SoundManager && SoundManager.playClick();
+      renderActionSelect(container, previousData);
+    }
   };
 }
 

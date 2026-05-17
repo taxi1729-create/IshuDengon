@@ -43,7 +43,7 @@ function getRandomConstraint() {
   return VERBAL_CONSTRAINTS[Math.floor(Math.random() * VERBAL_CONSTRAINTS.length)];
 }
 
-function renderVerbalAction(container, previousData, onComplete) {
+function renderVerbalAction(container, previousData, onComplete, onReselect) {
   const constraint = getRandomConstraint();
 
   container.innerHTML = `
@@ -58,7 +58,7 @@ function renderVerbalAction(container, previousData, onComplete) {
 
       ${previousData ? `
         <div class="verbal-hint-box">
-          <p class="verbal-hint-label">前の人からのヒント：</p>
+          <p class="verbal-hint-label">前の人からのヒント</p>
           ${previousData.imageData
             ? `<img src="${previousData.imageData}" class="result-drawing-small" alt="前の人の内容">`
             : `<p class="verbal-hint-text">${previousData.text || ''}</p>`
@@ -68,14 +68,19 @@ function renderVerbalAction(container, previousData, onComplete) {
 
       <div class="verbal-instructions">
         <p>この縛りを守りながら口頭でお題を伝えてください。</p>
-        <p>最後の人が答えを言ったら、判定に進みます。</p>
+        <p>最後の人が答えを言ったら判定に進みます。</p>
       </div>
 
       <button class="btn btn-primary" id="verbalDoneBtn">口頭で伝えた → 判定へ ▶</button>
+      <button class="btn btn-reselect" id="verbalReselectBtn">↩ アクションを選び直す</button>
     </div>
   `;
 
   document.getElementById('verbalDoneBtn').onclick = () => {
     onComplete({ constraint: constraint.name, constraintDesc: constraint.description });
+  };
+
+  document.getElementById('verbalReselectBtn').onclick = () => {
+    if (typeof onReselect === 'function') onReselect();
   };
 }
