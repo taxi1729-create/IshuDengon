@@ -7,7 +7,358 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>異種伝言ゲーム</title>
-  <link rel="stylesheet" href="style.css">
+
+  <!-- ★ここにネオ・ブルータリズムのCSSをすべて統合しました -->
+  <style>
+    /* ==========================================================================
+       Neo-Brutalism Base Styles (全体設定)
+       ========================================================================== */
+    :root {
+      --bg-color: #f5f0e8;       /* 目の粗い紙のようなレトロ背景色 */
+      --border-color: #000000;   /* 絶対的な黒ボーダー */
+      --border-thick: 4px;       /* ボーダーの太さ */
+      
+      /* ネオ・ブルータリズムを象徴する原色パレット */
+      --primary-color: #FFDE4D;  /* 鮮やかなイエロー */
+      --accent-blue: #4D96FF;     /* 鮮やかなブルー */
+      --accent-green: #6BCB77;    /* 鮮やかなグリーン */
+      --accent-red: #FF6B6B;      /* 鮮やかなレッド */
+      --card-bg: #FFFFFF;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Impact', 'Arial Black', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 500px; /* スマホ・PCで見栄えの良いサイズ */
+      background: var(--card-bg);
+      border: var(--border-thick) solid var(--border-color);
+      padding: 25px;
+      /* アプリのコンテナ自体もクッキリした3D影をつける */
+      box-shadow: 8px 8px 0px 0px var(--border-color);
+    }
+
+    /* 画面の切り替え用 */
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    /* ==========================================================================
+       Title Screen (タイトル画面)
+       ========================================================================== */
+    .title-logo-img {
+      display: block;
+      width: 80%;
+      margin: 0 auto;
+      max-height: 120px;
+      object-fit: contain;
+      border: 3px solid var(--border-color);
+      background: white;
+      padding: 10px;
+      box-shadow: 4px 4px 0px 0px var(--border-color);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .title-logo-img:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px var(--border-color);
+    }
+
+    /* ロゴの回転アニメーション用 */
+    .spinning {
+      animation: spinOnce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes spinOnce {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .title-sub {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background-color: var(--accent-blue);
+      color: white;
+      display: inline-block;
+      padding: 2px 10px;
+      margin: 10px auto 25px auto;
+      display: table;
+      border: 2px solid var(--border-color);
+      transform: rotate(-2deg); /* あえて少し傾けてアート感を出す */
+    }
+
+    /* ==========================================================================
+       Settings Panel & Inputs (設定まわり)
+       ========================================================================== */
+    .settings-panel {
+      margin-bottom: 25px;
+    }
+
+    .setting-row {
+      margin-bottom: 20px;
+      border-bottom: 2px dashed var(--border-color);
+      padding-bottom: 15px;
+    }
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .setting-label {
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin: 0 0 10px 0;
+      text-transform: uppercase;
+    }
+
+    /* トグルボタンのグループ (人数・難易度) */
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* グループ内の通常ボタン */
+    .toggle-btn {
+      flex: 1;
+      min-width: 60px;
+      padding: 8px 12px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      background-color: #FFFFFF;
+      border: 2px solid var(--border-color);
+      cursor: pointer;
+      position: relative;
+      top: 0;
+      left: 0;
+      box-shadow: 3px 3px 0px 0px var(--border-color);
+      transition: all 0.05s ease;
+    }
+    .toggle-btn:hover {
+      background-color: #f0f0f0;
+    }
+    /* アクティブ（選択中）のトグルボタン：押し込まれた状態をキープ */
+    .toggle-btn.active {
+      background-color: var(--primary-color);
+      top: 3px;
+      left: 3px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* 音量スライダー */
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 12px;
+      background: #FFFFFF;
+      border: 2px solid var(--border-color);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      background: var(--accent-blue);
+      border: 2px solid var(--border-color);
+      box-shadow: 2px 2px 0px var(--border-color);
+      cursor: pointer;
+    }
+
+    /* APIキー入力欄 */
+    .api-key-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 2px solid var(--border-color);
+      background: #FFFFFF;
+      box-shadow: 3px 3px 0px 0px var(--border-color);
+      outline: none;
+    }
+    .api-key-input:focus {
+      background: #fffdf3;
+      box-shadow: 4px 4px 0px 0px var(--border-color);
+    }
+    .api-key-hint {
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #555;
+      margin: 5px 0 0 0;
+    }
+
+    /* ==========================================================================
+       Buttons (メインのアクションボタン・押し込み)
+       ========================================================================== */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #000000;
+      cursor: pointer;
+      border: var(--border-thick) solid var(--border-color);
+      position: relative;
+      top: 0;
+      left: 0;
+      transition: all 0.08s ease;
+      text-align: center;
+    }
+
+    /* ゲームスタートボタン (黄) */
+    .btn-start {
+      background-color: var(--primary-color);
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+    }
+    .btn-start:hover {
+      top: -2px;
+      left: -2px;
+      box-shadow: 7px 7px 0px 0px var(--border-color);
+    }
+    .btn-start:active {
+      top: 5px;
+      left: 5px;
+      box-shadow: 0px 0px 0px 0px var(--border-color);
+    }
+
+    /* リザルト画面ボタン：プライマリ (緑) */
+    .btn-primary {
+      background-color: var(--accent-green);
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+      margin-bottom: 15px;
+    }
+    .btn-primary:hover { top: -2px; left: -2px; box-shadow: 7px 7px 0px 0px var(--border-color); }
+    .btn-primary:active { top: 5px; left: 5px; box-shadow: 0px 0px 0px 0px var(--border-color); }
+
+    /* リザルト画面ボタン：セカンダリ (青) */
+    .btn-secondary {
+      background-color: var(--accent-blue);
+      color: white;
+      box-shadow: 5px 5px 0px 0px var(--border-color);
+    }
+    .btn-secondary:hover { top: -2px; left: -2px; box-shadow: 7px 7px 0px 0px var(--border-color); }
+    .btn-secondary:active { top: 5px; left: 5px; box-shadow: 0px 0px 0px 0px var(--border-color); }
+
+    /* ==========================================================================
+       Game Play Screen (ゲーム画面)
+       ========================================================================== */
+    .player-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: var(--border-thick) solid var(--border-color);
+    }
+
+    .player-badge {
+      background-color: var(--accent-red);
+      color: white;
+      padding: 5px 15px;
+      font-weight: 900;
+      font-size: 1.1rem;
+      border: 2px solid var(--border-color);
+      box-shadow: 3px 3px 0px var(--border-color);
+    }
+
+    .player-progress {
+      display: flex;
+      gap: 6px;
+    }
+    .player-progress span, .dot {
+      width: 14px;
+      height: 14px;
+      background-color: white;
+      border: 2px solid var(--border-color);
+      border-radius: 50%;
+    }
+    .player-progress span.active, .dot.active {
+      background-color: var(--primary-color);
+    }
+
+    .game-content {
+      background: #FFFFFF;
+      border: 3px solid var(--border-color);
+      padding: 20px;
+      min-height: 200px;
+      box-shadow: 4px 4px 0px var(--border-color);
+    }
+
+    /* ==========================================================================
+       Result Screen (リザルト画面)
+       ========================================================================== */
+    .result-header {
+      text-align: center;
+      background: var(--primary-color);
+      border: var(--border-thick) solid var(--border-color);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 5px 5px 0px var(--border-color);
+    }
+
+    .result-emoji {
+      font-size: 3rem;
+      margin-bottom: 5px;
+    }
+
+    .result-title {
+      margin: 0 0 10px 0;
+      font-size: 2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .result-topic {
+      font-size: 1.2rem;
+      margin: 0;
+      font-weight: bold;
+    }
+    .result-topic span {
+      background: #FFFFFF;
+      padding: 2px 8px;
+      border: 2px solid var(--border-color);
+    }
+
+    .action-history {
+      border: 3px solid var(--border-color);
+      background: #FFFFFF;
+      padding: 15px;
+      margin-bottom: 25px;
+      box-shadow: 4px 4px 0px var(--border-color);
+    }
+
+    .history-title {
+      font-weight: 900;
+      margin-top: 0;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 5px;
+    }
+
+    .result-buttons {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -15,7 +366,7 @@
     <!-- ==================== タイトル画面 ==================== -->
     <div id="titleScreen" class="screen active">
 
-      <!-- タイトルロゴ画像：title_logo.png をこのフォルダに置いてください -->
+      <!-- タイトルロゴ画像 -->
       <img
         src="title_logo.PNG"
         alt="異種伝言ゲーム"
@@ -145,7 +496,6 @@
         SoundManager.playClick();
         logoImg.classList.add('spinning');
         logoImg.addEventListener('animationend', function handler(e) {
-          // spinOnce が終わったタイミングだけ除去
           if (e.animationName === 'spinOnce') {
             logoImg.classList.remove('spinning');
             logoImg.removeEventListener('animationend', handler);
