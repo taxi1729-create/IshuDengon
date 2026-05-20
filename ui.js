@@ -236,13 +236,13 @@ function renderActionExecute(container, actionId, previousData) {
 
   switch (actionId) {
     case 'ai':
-      renderAiTransformAction(container, topic, previousData, (data) => {
+      renderAiTransformAction(container, topic, (data) => {
         onActionComplete('ai', data);
       });
       break;
 
     case 'drawing':
-      renderDrawingAction(container, topic, previousData, (data) => {
+      renderDrawingAction(container, topic, (data) => {
         onActionComplete('drawing', data);
       });
       break;
@@ -257,20 +257,15 @@ function renderActionExecute(container, actionId, previousData) {
             <p class="text-dim">次の人に見せながらジェスチャーしてください。</p>
           </div>
           <button class="btn btn-primary" id="gestureDoneBtn">伝えた → 次の人へ ▶</button>
-          <button class="btn btn-reselect" id="gestureReselectBtn">↩ アクションを選び直す</button>
         </div>
       `;
       document.getElementById('gestureDoneBtn').addEventListener('click', () => {
         onActionComplete('gesture', { note: 'ジェスチャーで伝えました' });
       });
-      document.getElementById('gestureReselectBtn').addEventListener('click', () => {
-        SoundManager.playClick();
-        renderActionSelect(container, previousData);
-      });
       break;
 
     case 'shapes':
-      renderShapesAction(container, topic, previousData, (data) => {
+      renderShapesAction(container, topic, (data) => {
         onActionComplete('shapes', data);
       });
       break;
@@ -278,9 +273,6 @@ function renderActionExecute(container, actionId, previousData) {
     case 'verbal':
       renderVerbalAction(container, previousData, (data) => {
         onActionComplete('verbal', data);
-      }, () => {
-        SoundManager.playClick();
-        renderActionSelect(container, previousData);
       });
       break;
   }

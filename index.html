@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#f5f0e8">
+  <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>異種伝言ゲーム</title>
@@ -15,15 +15,12 @@
     <!-- ==================== タイトル画面 ==================== -->
     <div id="titleScreen" class="screen active">
 
-      <!-- タイトルロゴ画像：title_logo.png をこのフォルダに置いてください -->
-      <img
-        src="title_logo.PNG"
-        alt="異種伝言ゲーム"
-        class="title-logo-img"
-        id="titleLogoImg"
-        draggable="false"
-      >
-      <p class="title-sub">ishu_dengon</p>
+      <div class="title-emoji">🎭</div>
+
+      <div>
+        <h1 class="title-logo">異種伝言ゲーム</h1>
+        <p class="title-sub">ishu_dengon</p>
+      </div>
 
       <div class="settings-panel">
 
@@ -113,7 +110,7 @@
 
       <!-- ボタン -->
       <div class="result-buttons">
-        <button class="btn btn-primary" id="replayBtn">タイトルに戻る</button>
+        <button class="btn btn-primary" id="replayBtn">もう一度遊ぶ 🔄</button>
         <button class="btn btn-secondary" id="continueBtn">同じ設定で続ける ▶</button>
       </div>
 
@@ -136,22 +133,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       // タイトル画面の初期化
       initTitleScreen();
-
-      // ロゴタップで一回転
-      const logoImg = document.getElementById('titleLogoImg');
-      logoImg.addEventListener('click', () => {
-        if (logoImg.classList.contains('spinning')) return;
-        SoundManager.init();
-        SoundManager.playClick();
-        logoImg.classList.add('spinning');
-        logoImg.addEventListener('animationend', function handler(e) {
-          // spinOnce が終わったタイミングだけ除去
-          if (e.animationName === 'spinOnce') {
-            logoImg.classList.remove('spinning');
-            logoImg.removeEventListener('animationend', handler);
-          }
-        });
-      });
 
       // リザルト画面のボタン
       document.getElementById('replayBtn').addEventListener('click', () => {
