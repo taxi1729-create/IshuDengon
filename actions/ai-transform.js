@@ -38,27 +38,18 @@ async function aiTransformTopic(topic, apiKey) {
 }
 
 // AI変換アクション画面を描画
-function renderAiTransformAction(container, topic, previousData, onComplete) {
-  // previousData が関数（旧シグネチャ対応）の場合の互換処理
-  if (typeof previousData === 'function') { onComplete = previousData; previousData = null; }
-
-  const reselectFn = () => {
-    // ui.js の renderActionSelect を呼ぶ
-    if (typeof renderActionSelect === 'function') {
-      SoundManager && SoundManager.playClick();
-      renderActionSelect(container, previousData);
-    }
-  };
-
+function renderAiTransformAction(container, topic, onComplete) {
   container.innerHTML = `
     <div class="action-container ai-action">
       <h2 class="action-title">🤖 AI変換</h2>
-      <p class="action-desc-text">AIがお題を「尖った視点」で言い換えます。<br>次の人にこのテキストを見せてください。</p>
+      <p class="action-desc">AIがお題を「尖った視点」で言い換えます。<br>次の人にこのテキストを見せてください。</p>
       <div class="ai-result-box" id="aiResult">
         <div class="loading-spinner"></div>
+        <p>変換中...</p>
       </div>
-      <button class="btn btn-primary" id="aiDoneBtn" style="display:none;">次の人へ渡す ▶</button>
-      <button class="btn btn-reselect" id="aiReselectBtn">↩ アクションを選び直す</button>
+      <button class="btn btn-primary" id="aiDoneBtn" style="display:none;" onclick="onComplete()">
+        次の人へ渡す ▶
+      </button>
     </div>
   `;
 
@@ -68,12 +59,9 @@ function renderAiTransformAction(container, topic, previousData, onComplete) {
   aiTransformTopic(topic, apiKey).then(text => {
     resultText = text;
     document.getElementById('aiResult').innerHTML = `<p class="ai-text">${text}</p>`;
-    const doneBtn = document.getElementById('aiDoneBtn');
-    doneBtn.style.display = 'block';
-    doneBtn.onclick = () => onComplete({ text: resultText });
+    document.getElementById('aiDoneBtn').style.display = 'block';
+    document.getElementById('aiDoneBtn').onclick = () => onComplete({ text: resultText });
   });
-
-  document.getElementById('aiReselectBtn').onclick = reselectFn;
 }
 
 // AI変換結果を表示（次の人へ渡す）

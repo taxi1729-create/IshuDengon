@@ -1,13 +1,10 @@
 // actions/drawing.js - お絵描きアクション
 
-function renderDrawingAction(container, topic, previousData, onComplete) {
-  // 旧シグネチャ互換
-  if (typeof previousData === 'function') { onComplete = previousData; previousData = null; }
-
+function renderDrawingAction(container, topic, onComplete) {
   container.innerHTML = `
     <div class="action-container drawing-action">
       <h2 class="action-title">🎨 絵を描く</h2>
-      <p class="action-desc-text">お題を絵で表現してください。</p>
+      <p class="action-desc">お題を絵で表現してください。</p>
 
       <div class="drawing-toolbar">
         <div class="tool-group">
@@ -28,7 +25,6 @@ function renderDrawingAction(container, topic, previousData, onComplete) {
       <canvas id="drawCanvas" class="draw-canvas"></canvas>
 
       <button class="btn btn-primary" id="drawDoneBtn">完成！次の人へ渡す ▶</button>
-      <button class="btn btn-reselect" id="drawReselectBtn">↩ アクションを選び直す</button>
     </div>
   `;
 
@@ -131,14 +127,6 @@ function renderDrawingAction(container, topic, previousData, onComplete) {
   document.getElementById('drawDoneBtn').onclick = () => {
     const imageData = canvas.toDataURL('image/png');
     onComplete({ imageData });
-  };
-
-  // 選び直し
-  document.getElementById('drawReselectBtn').onclick = () => {
-    if (typeof renderActionSelect === 'function') {
-      SoundManager && SoundManager.playClick();
-      renderActionSelect(container, previousData);
-    }
   };
 }
 
