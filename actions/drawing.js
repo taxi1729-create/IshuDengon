@@ -170,13 +170,13 @@ function spawnBugs(wrapId) {
     bug.src = 'bug.png';
     bug.style.cssText = `
       position:absolute;
-      width:48px; height:48px;
+      width:480px; height:480px;
       object-fit:contain;
       pointer-events:none;
       left:${Math.random() * 80}%;
       top:${Math.random() * 80}%;
       transform:rotate(0deg);
-      transition:left 0.6s linear, top 0.6s linear;
+      transition:left 0.1s linear, top 0.1s linear;
     `;
     wrap.appendChild(bug);
 
