@@ -42,9 +42,9 @@ function renderDrawingAction(container, topic, prevRecord, onComplete, onReselec
 
   document.getElementById('drawDoneBtn').onclick = () => {
     const canvas = document.getElementById('drawCanvas');
-    const imageData = canvas.toDataURL('image/png');
     // 次の人に渡す前にお邪魔虫画面へ
     renderDrawingWithBug(container, imageData, onComplete);
+    const imageData = canvas.toDataURL('image/png');
   };
 
   document.getElementById('drawReselectBtn').onclick = onReselect;
