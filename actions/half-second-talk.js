@@ -7,21 +7,21 @@ function renderHalfTalkAction(container, topic, prevRecord, onComplete, onResele
 
   container.innerHTML = `
     <div class="action-container">
-      <h2 class="action-title">🎤 0.5秒しゃべる</h2>
+      <h2 class="action-title">🎤 1秒しゃべる</h2>
       ${prevHtml}
       <div class="current-topic-display">
         <span class="current-topic-label">伝えるお題</span>
         <span class="current-topic-value">${topic}</span>
       </div>
       <p class="action-desc-text">
-        ボタンを押した瞬間から0.5秒だけ声に出してお題を伝えてください。<br>
+        ボタンを押した瞬間から1秒だけ声に出してお題を伝えてください。<br>
         次の人はその一瞬の言葉を頼りにアクションを選びます。
       </p>
 
       <div class="halftalk-stage">
         <div class="halftalk-status" id="halftalkStatus">準備ができたらボタンを押してください</div>
         <div class="halftalk-countdown" id="halftalkCountdown" style="display:none;">GO!</div>
-        <button class="btn btn-danger halftalk-btn" id="halktalkStartBtn">🎤 しゃべる！（0.5秒）</button>
+        <button class="btn btn-danger halftalk-btn" id="halktalkStartBtn">🎤 しゃべる！（1秒）</button>
       </div>
 
       <button class="btn btn-primary" id="halftalkDoneBtn" style="display:none;">伝えた → 次の人へ ▶</button>
@@ -48,11 +48,11 @@ function renderHalfTalkAction(container, topic, prevRecord, onComplete, onResele
       SoundManager && SoundManager.playBuzz && SoundManager.playBuzz();
       vibrate && vibrate([80]);
       countEl.textContent = '⏹ 終了！';
-      statusEl.textContent = '0.5秒経過しました！次の人へ渡してください。';
+      statusEl.textContent = '1秒経過しました！次の人へ渡してください。';
       doneBtn.style.display = 'block';
-    }, 500);
+    }, 3500);
   };
 
-  doneBtn.onclick = () => onComplete({ note: '0.5秒しゃべりました' });
+  doneBtn.onclick = () => onComplete({ note: '1秒しゃべりました' });
   document.getElementById('halftalkReselectBtn').onclick = onReselect;
 }
