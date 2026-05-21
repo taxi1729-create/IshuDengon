@@ -1,0 +1,58 @@
+// actions/half-second-talk.js - 0.5秒しゃべるアクション
+
+function renderHalfTalkAction(container, topic, prevRecord, onComplete, onReselect) {
+  const prevHtml = prevRecord
+    ? (typeof buildPrevContentHtml === 'function' ? buildPrevContentHtml(prevRecord) : '')
+    : '';
+
+  container.innerHTML = `
+    <div class="action-container">
+      <h2 class="action-title">🎤 0.5秒しゃべる</h2>
+      ${prevHtml}
+      <div class="current-topic-display">
+        <span class="current-topic-label">伝えるお題</span>
+        <span class="current-topic-value">${topic}</span>
+      </div>
+      <p class="action-desc-text">
+        ボタンを押した瞬間から0.5秒だけ声に出してお題を伝えてください。<br>
+        次の人はその一瞬の言葉を頼りにアクションを選びます。
+      </p>
+
+      <div class="halftalk-stage">
+        <div class="halftalk-status" id="halftalkStatus">準備ができたらボタンを押してください</div>
+        <div class="halftalk-countdown" id="halftalkCountdown" style="display:none;">GO!</div>
+        <button class="btn btn-danger halftalk-btn" id="halktalkStartBtn">🎤 しゃべる！（0.5秒）</button>
+      </div>
+
+      <button class="btn btn-primary" id="halftalkDoneBtn" style="display:none;">伝えた → 次の人へ ▶</button>
+      <button class="btn btn-reselect" id="halftalkReselectBtn">↩ アクションを選び直す</button>
+    </div>
+  `;
+
+  const startBtn = document.getElementById('halktalkStartBtn');
+  const countEl  = document.getElementById('halftalkCountdown');
+  const statusEl = document.getElementById('halftalkStatus');
+  const doneBtn  = document.getElementById('halftalkDoneBtn');
+
+  startBtn.onclick = () => {
+    startBtn.disabled = true;
+    statusEl.textContent = '今すぐしゃべってください！';
+    countEl.style.display = 'block';
+    countEl.textContent = 'GO!';
+
+    SoundManager && SoundManager.playBeep && SoundManager.playBeep(880, 0.05, 'square');
+    vibrate && vibrate([30]);
+
+    // 0.5秒後に終了
+    setTimeout(() => {
+      SoundManager && SoundManager.playBuzz && SoundManager.playBuzz();
+      vibrate && vibrate([80]);
+      countEl.textContent = '⏹ 終了！';
+      statusEl.textContent = '0.5秒経過しました！次の人へ渡してください。';
+      doneBtn.style.display = 'block';
+    }, 500);
+  };
+
+  doneBtn.onclick = () => onComplete({ note: '0.5秒しゃべりました' });
+  document.getElementById('halftalkReselectBtn').onclick = onReselect;
+}

@@ -812,3 +812,216 @@ input[type=color] {
   transform: none;
   background: var(--gray2);
 }
+
+/* ===== 新機能パーツ ===== */
+
+/* カテゴリバッジ（お題表示） */
+.category-badge {
+  display: inline-block;
+  background: var(--black);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  padding: 4px 16px;
+  margin-bottom: 4px;
+}
+
+/* 現在の累積お題表示 */
+.current-topic-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--accent);
+  border: 2px solid var(--black);
+  box-shadow: 3px 3px 0 var(--black);
+  padding: 10px 14px;
+  margin-bottom: 4px;
+}
+.current-topic-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--black);
+}
+.current-topic-value {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  color: var(--black);
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+/* 前の人のヒントボックス（アクション選択画面・実行画面共通） */
+.prev-hint-box {
+  background: var(--white);
+  border: 1.5px solid #999;
+  border-left: 4px solid var(--black);
+  padding: 10px 12px;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 4px;
+}
+.prev-hint-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #666;
+  margin-bottom: 6px;
+}
+.prev-topic-chip {
+  font-size: 0.72rem;
+  color: #555;
+  margin-bottom: 6px;
+}
+.prev-hint-content { font-size: 0.9rem; }
+
+/* AI変換：自己入力テキストエリア */
+.ai-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #555;
+  background: #fff;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  border-radius: 4px;
+  outline: none;
+  color: var(--black);
+}
+.ai-textarea:focus { border-color: var(--black); }
+
+/* 難易度ヒントテキスト */
+.setting-hint {
+  font-size: 0.72rem;
+  color: #666;
+  line-height: 1.7;
+  margin-top: 4px;
+}
+.setting-badge {
+  font-size: 0.65rem;
+  background: var(--black);
+  color: var(--accent);
+  padding: 1px 6px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-left: 4px;
+}
+
+/* 0.5秒しゃべるアクション */
+.halftalk-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--gray2);
+  border: 1.5px solid #ccc;
+  padding: 24px 16px;
+  text-align: center;
+  border-radius: 4px;
+}
+.halftalk-status {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--black);
+}
+.halftalk-countdown {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: var(--red);
+  letter-spacing: 0.1em;
+  animation: pulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  from { transform: scale(1);   opacity: 1; }
+  to   { transform: scale(1.15); opacity: 0.8; }
+}
+.halftalk-btn {
+  width: 100%;
+  max-width: 280px;
+  padding: 18px;
+  font-size: 1.1rem;
+}
+
+/* 5秒消え絵タイマーオーバーレイ */
+.flash-timer-overlay {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: var(--red);
+  background: rgba(255,255,255,0.85);
+  padding: 2px 10px;
+  border: 2px solid var(--red);
+  pointer-events: none;
+  letter-spacing: 0.1em;
+}
+
+/* 答え入力（最後の人） */
+.answer-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.answer-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--black);
+  background: #fff;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  border-radius: 4px;
+  outline: none;
+  color: var(--black);
+  box-shadow: 3px 3px 0 var(--black);
+}
+.answer-input:focus { border-color: var(--black); }
+
+/* Gemini判定結果 */
+.judge-result-box {
+  border: 2px solid var(--black);
+  padding: 16px;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+.judge-result-box.correct { background: #d4f5e0; border-color: var(--green); }
+.judge-result-box.wrong   { background: #fde0e6; border-color: var(--red); }
+.judge-result-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.judge-result-reason { font-size: 0.88rem; line-height: 1.7; }
+
+.correct-answer-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--accent);
+  border: 2px solid var(--black);
+  padding: 12px 16px;
+  margin-top: 10px;
+}
+.correct-label { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; }
+.correct-value { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: 0.08em; word-break: break-all; }
+
+/* ローディングボックス */
+.loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: #666;
+  font-size: 0.88rem;
+}

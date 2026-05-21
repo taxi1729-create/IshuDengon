@@ -1,18 +1,14 @@
-// ui.js - 画面遷移・UI制御
+// ui.js - 画面遷移・UI制御（増える修飾語版）
 
 // ===== 画面管理 =====
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById(id);
-  if (screen) {
-    screen.classList.add('active');
-    window.scrollTo(0, 0);
-  }
+  if (screen) { screen.classList.add('active'); window.scrollTo(0, 0); }
 }
 
 // ===== タイトル画面 =====
 function initTitleScreen() {
-  // 人数ボタン
   document.querySelectorAll('#playerCount .toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#playerCount .toggle-btn').forEach(b => b.classList.remove('active'));
@@ -22,7 +18,6 @@ function initTitleScreen() {
     });
   });
 
-  // 難易度ボタン
   document.querySelectorAll('#difficulty .toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#difficulty .toggle-btn').forEach(b => b.classList.remove('active'));
@@ -32,21 +27,18 @@ function initTitleScreen() {
     });
   });
 
-  // 音量スライダー
   const volumeSlider = document.getElementById('volumeSlider');
   volumeSlider.addEventListener('input', () => {
     SoundManager.setVolume(parseFloat(volumeSlider.value));
   });
 
-  // APIキー
-  const apiKeyInput = document.getElementById('apiKeyInput');
-  if (apiKeyInput) {
-    apiKeyInput.addEventListener('input', () => {
-      GameState.apiKey = apiKeyInput.value.trim();
+  const geminiKeyInput = document.getElementById('geminiKeyInput');
+  if (geminiKeyInput) {
+    geminiKeyInput.addEventListener('input', () => {
+      GameState.geminiApiKey = geminiKeyInput.value.trim();
     });
   }
 
-  // スタートボタン
   document.getElementById('startBtn').addEventListener('click', () => {
     SoundManager.init();
     SoundManager.playNext();
@@ -58,24 +50,22 @@ function initTitleScreen() {
 // ===== ゲーム開始 =====
 function startGame() {
   GameState.reset();
-  GameState.currentTopic = getRandomTopic(GameState.difficulty);
+  const { topic, category } = getRandomTopicWithCategory();
+  GameState.baseTopic = topic;
+  GameState.category = category;
   showScreen('gameScreen');
   renderPlayerTurn();
 }
 
 // ===== プレイヤーターン描画 =====
 function renderPlayerTurn() {
-  const idx = GameState.currentPlayerIndex;
   const content = document.getElementById('gameContent');
-
   updateProgressDots();
 
   if (GameState.isLastPlayer) {
-    // 最後の人：前の人のコンテンツ確認 → 判定
     renderLastPlayerScreen(content);
   } else {
-    // それ以外：プレイヤー確認 → アクション選択
-    renderPlayerConfirm(content, idx);
+    renderPlayerConfirm(content, GameState.currentPlayerIndex);
   }
 }
 
@@ -89,9 +79,7 @@ function updateProgressDots() {
     else if (i === GameState.currentPlayerIndex) dot.classList.add('current');
     container.appendChild(dot);
   }
-
-  const badge = document.getElementById('playerBadge');
-  badge.textContent = `${GameState.currentPlayer}人目`;
+  document.getElementById('playerBadge').textContent = `${GameState.currentPlayer}人目`;
 }
 
 // ===== プレイヤー確認画面 =====
@@ -104,25 +92,31 @@ function renderPlayerConfirm(container, idx) {
       <button class="btn btn-primary" id="confirmReadyBtn">準備OK ▶</button>
     </div>
   `;
-
   document.getElementById('confirmReadyBtn').addEventListener('click', () => {
     SoundManager.playClick();
     vibrate([20]);
     if (GameState.isFirstPlayer) {
       renderTopicReveal(container);
     } else {
-      renderPreviousContent(container);
+      renderActionSelect(container, getPrevActionData());
     }
   });
+}
+
+// 直前のアクションデータを取得
+function getPrevActionData() {
+  const prev = GameState.roundData[GameState.roundData.length - 1];
+  return prev || null;
 }
 
 // ===== お題表示（1人目） =====
 function renderTopicReveal(container) {
   container.innerHTML = `
     <div class="topic-reveal">
-      <p class="topic-label">今回のお題</p>
-      <div class="topic-text">${GameState.currentTopic}</div>
-      <p class="action-desc">このお題を次の人に伝えてください。</p>
+      <div class="category-badge">📂 ${GameState.category}</div>
+      <p class="topic-label">最初のお題</p>
+      <div class="topic-text">${GameState.baseTopic}</div>
+      <p class="action-desc-text">このお題を次の人に伝えてください。<br>次の人には修飾語が追加されたお題を伝えることになります。</p>
       <button class="btn btn-primary" id="topicOkBtn">アクションを選ぶ ▶</button>
     </div>
   `;
@@ -132,90 +126,81 @@ function renderTopicReveal(container) {
   });
 }
 
-// ===== 前の人のコンテンツ表示 =====
-function renderPreviousContent(container) {
-  const prevData = GameState.roundData[GameState.roundData.length - 1];
-  if (!prevData) {
-    renderActionSelect(container, null);
-    return;
-  }
+// ===== 前のアクション内容をHTMLで返す（アクション選択画面でも使う） =====
+function buildPrevContentHtml(prevRecord) {
+  if (!prevRecord) return '';
+  const { actionType, actionData } = prevRecord;
+  const topicAtTime = prevRecord.topicAtTime || '';
 
-  const { actionType, actionData } = prevData;
-  let content = '';
-
+  let inner = '';
   if (actionType === 'ai') {
-    content = `
-      <div class="ai-result-box">
-        <p class="ai-text">${actionData.text}</p>
-      </div>
-      <p class="text-dim text-center">（前の人がAIに変換してもらったヒントです）</p>
-    `;
-  } else if (actionType === 'drawing') {
-    content = `
-      <img src="${actionData.imageData}" class="result-drawing" alt="前の人の絵">
-      <p class="text-dim text-center">（前の人が描いた絵です）</p>
-    `;
-  } else if (actionType === 'shapes') {
-    content = `
-      <img src="${actionData.imageData}" class="result-drawing" alt="前の人の図形">
-      <p class="text-dim text-center">（前の人が作った図形です）</p>
-    `;
+    inner = `<p class="ai-text">${actionData.text}</p>`;
+  } else if (actionType === 'drawing' || actionType === 'shapes' || actionType === 'flashdraw') {
+    inner = `<img src="${actionData.imageData}" class="result-drawing" alt="前の人の内容">`;
   } else if (actionType === 'gesture') {
-    content = `
-      <div class="gesture-stage">
-        <div class="gesture-icon">🙌</div>
-        <p>前の人がジェスチャーで伝えます。<br>よく見てください。</p>
-      </div>
-    `;
+    inner = `<div style="text-align:center;font-size:2rem;padding:12px;">🙌<br><span style="font-size:0.85rem;">ジェスチャーで伝えます</span></div>`;
   } else if (actionType === 'verbal') {
-    content = `
-      <div class="constraint-badge" style="flex-direction:column;align-items:flex-start;">
-        <div><span class="constraint-label">縛り</span> <span class="constraint-name">${actionData.constraint}</span></div>
-        <p style="font-size:0.8rem;margin-top:4px;color:#1a1a2e;">${actionData.constraintDesc}</p>
-      </div>
-      <p class="text-dim text-center">前の人が口頭でお題を伝えます。</p>
-    `;
+    inner = `<p style="font-weight:700;">縛り：${actionData.constraint}<br><span style="font-size:0.8rem;color:#555;">${actionData.constraintDesc}</span></p>`;
+  } else if (actionType === 'halftalk') {
+    inner = `<div style="text-align:center;font-size:2rem;padding:12px;">🎤<br><span style="font-size:0.85rem;">0.5秒しゃべります</span></div>`;
   }
 
-  container.innerHTML = `
-    <div class="action-container">
-      <h2 class="action-title">前の人からのヒント</h2>
-      ${content}
-      <button class="btn btn-primary" id="prevOkBtn">確認した → アクションを選ぶ ▶</button>
+  return `
+    <div class="prev-hint-box">
+      <div class="prev-hint-label">前の人からのヒント</div>
+      ${topicAtTime ? `<div class="prev-topic-chip">伝えようとしたお題：<strong>${topicAtTime}</strong></div>` : ''}
+      <div class="prev-hint-content">${inner}</div>
     </div>
   `;
-
-  document.getElementById('prevOkBtn').addEventListener('click', () => {
-    SoundManager.playClick();
-    renderActionSelect(container, prevData.actionData);
-  });
 }
 
-// ===== アクション選択 =====
-function renderActionSelect(container, previousData) {
-  const isSecondToLast = GameState.isSecondToLast;
+// ===== アクション選択（ヒント付き） =====
+function renderActionSelect(container, prevRecord) {
+  // 使用済みアクションを収集
+  const usedActions = GameState.roundData.map(r => r.actionType);
+
+  // 現在の累積お題を表示
+  const currentFullTopic = GameState.currentTopic;
 
   const actions = [
-    { id: 'ai',      icon: '🤖', name: 'AI変換',   desc: '尖った視点でAIが言い換え', locked: false },
-    { id: 'drawing', icon: '🎨', name: '絵を描く', desc: '手描きで表現',              locked: false },
-    { id: 'gesture', icon: '🙌', name: 'ジェスチャー', desc: '身振り手振りで伝える',  locked: false },
-    { id: 'shapes',  icon: '🔷', name: '抽象図形', desc: '図形を配置・色付け',        locked: false },
-    { id: 'verbal',  icon: '💬', name: '口頭（縛り付き）', desc: '言葉で伝える（縛りあり）',
-      locked: !isSecondToLast, badge: isSecondToLast ? null : '最後から2人目のみ' }
+    { id: 'ai',        icon: '🤖', name: 'AI変換',        desc: '自分の解釈をAIが言い換え' },
+    { id: 'drawing',   icon: '🎨', name: '絵を描く',       desc: '手描き（お邪魔虫あり）' },
+    { id: 'flashdraw', icon: '⚡', name: '5秒消え絵',      desc: '5秒で消える手描き' },
+    { id: 'halftalk',  icon: '🎤', name: '0.5秒しゃべる',  desc: '0.5秒だけ声で伝える' },
+    { id: 'gesture',   icon: '🙌', name: 'ジェスチャー',   desc: '身振り手振りで伝える' },
+    { id: 'shapes',    icon: '🔷', name: '抽象図形',       desc: '図形を配置・色付け' },
+    { id: 'verbal',    icon: '💬', name: '口頭（縛り付き）', desc: '縛りあり・最後から2人目のみ' },
   ];
+
+  // 使用済みアクションはロック
+  const isSecondToLast = GameState.currentPlayerIndex === GameState.playerCount - 2;
+
+  const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
 
   container.innerHTML = `
     <div class="action-container">
-      <p class="action-select-title">どのアクションで伝えますか？</p>
+      ${prevHtml}
+      <div class="current-topic-display">
+        <span class="current-topic-label">あなたが伝えるお題</span>
+        <span class="current-topic-value">${currentFullTopic}</span>
+      </div>
+      <p class="action-select-title">アクションを選んでください</p>
       <div class="action-grid">
-        ${actions.map(a => `
-          <div class="action-card ${a.locked ? 'locked' : ''}" data-action="${a.id}">
-            <div class="action-icon">${a.icon}</div>
-            <div class="action-name">${a.name}</div>
-            <div class="action-desc">${a.desc}</div>
-            ${a.badge ? `<div class="action-badge">${a.badge}</div>` : ''}
-          </div>
-        `).join('')}
+        ${actions.map(a => {
+          const isLocked = (a.id === 'verbal' && !isSecondToLast) ||
+                           usedActions.includes(a.id);
+          const lockReason = a.id === 'verbal' && !isSecondToLast
+            ? '最後から2人目のみ'
+            : usedActions.includes(a.id) ? '使用済み' : null;
+          return `
+            <div class="action-card ${isLocked ? 'locked' : ''}" data-action="${a.id}">
+              <div class="action-icon">${a.icon}</div>
+              <div class="action-name">${a.name}</div>
+              <div class="action-desc">${a.desc}</div>
+              ${lockReason ? `<div class="action-badge">${lockReason}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
   `;
@@ -224,66 +209,69 @@ function renderActionSelect(container, previousData) {
     card.addEventListener('click', () => {
       SoundManager.playClick();
       vibrate([20]);
-      const actionId = card.dataset.action;
-      renderActionExecute(container, actionId, previousData);
+      renderActionExecute(container, card.dataset.action, prevRecord);
     });
   });
 }
 
 // ===== アクション実行 =====
-function renderActionExecute(container, actionId, previousData) {
+function renderActionExecute(container, actionId, prevRecord) {
   const topic = GameState.currentTopic;
+  const prevData = prevRecord ? prevRecord.actionData : null;
+
+  const reselect = () => {
+    SoundManager.playClick();
+    renderActionSelect(container, prevRecord);
+  };
+  const complete = (data) => onActionComplete(actionId, data);
 
   switch (actionId) {
     case 'ai':
-      renderAiTransformAction(container, topic, previousData, (data) => {
-        onActionComplete('ai', data);
-      });
+      renderAiTransformAction(container, topic, prevRecord, complete, reselect);
       break;
-
     case 'drawing':
-      renderDrawingAction(container, topic, previousData, (data) => {
-        onActionComplete('drawing', data);
-      });
+      renderDrawingAction(container, topic, prevRecord, complete, reselect);
       break;
-
+    case 'flashdraw':
+      renderFlashDrawAction(container, topic, prevRecord, complete, reselect);
+      break;
+    case 'halftalk':
+      renderHalfTalkAction(container, topic, prevRecord, complete, reselect);
+      break;
     case 'gesture':
-      container.innerHTML = `
-        <div class="action-container">
-          <h2 class="action-title">🙌 ジェスチャー</h2>
-          <div class="gesture-stage">
-            <div class="gesture-icon">🙌</div>
-            <p>身振り手振りでお題を伝えてください。</p>
-            <p class="text-dim">次の人に見せながらジェスチャーしてください。</p>
-          </div>
-          <button class="btn btn-primary" id="gestureDoneBtn">伝えた → 次の人へ ▶</button>
-          <button class="btn btn-reselect" id="gestureReselectBtn">↩ アクションを選び直す</button>
-        </div>
-      `;
-      document.getElementById('gestureDoneBtn').addEventListener('click', () => {
-        onActionComplete('gesture', { note: 'ジェスチャーで伝えました' });
-      });
-      document.getElementById('gestureReselectBtn').addEventListener('click', () => {
-        SoundManager.playClick();
-        renderActionSelect(container, previousData);
-      });
+      renderGestureAction(container, topic, prevRecord, complete, reselect);
       break;
-
     case 'shapes':
-      renderShapesAction(container, topic, previousData, (data) => {
-        onActionComplete('shapes', data);
-      });
+      renderShapesAction(container, topic, prevRecord, complete, reselect);
       break;
-
     case 'verbal':
-      renderVerbalAction(container, previousData, (data) => {
-        onActionComplete('verbal', data);
-      }, () => {
-        SoundManager.playClick();
-        renderActionSelect(container, previousData);
-      });
+      renderVerbalAction(container, prevData, complete, reselect);
       break;
   }
+}
+
+// ===== ジェスチャーアクション =====
+function renderGestureAction(container, topic, prevRecord, onComplete, onReselect) {
+  const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
+  container.innerHTML = `
+    <div class="action-container">
+      <h2 class="action-title">🙌 ジェスチャー</h2>
+      ${prevHtml}
+      <div class="current-topic-display">
+        <span class="current-topic-label">伝えるお題</span>
+        <span class="current-topic-value">${topic}</span>
+      </div>
+      <div class="gesture-stage">
+        <div class="gesture-icon">🙌</div>
+        <p>身振り手振りでお題を伝えてください。</p>
+        <p class="text-dim">次の人に見せながらジェスチャーしてください。</p>
+      </div>
+      <button class="btn btn-primary" id="gestureDoneBtn">伝えた → 次の人へ ▶</button>
+      <button class="btn btn-reselect" id="gestureReselectBtn">↩ アクションを選び直す</button>
+    </div>
+  `;
+  document.getElementById('gestureDoneBtn').onclick = () => onComplete({ note: 'ジェスチャー' });
+  document.getElementById('gestureReselectBtn').onclick = onReselect;
 }
 
 // ===== アクション完了 =====
@@ -295,58 +283,109 @@ function onActionComplete(actionType, actionData) {
   renderPlayerTurn();
 }
 
-// ===== 最後の人の画面 =====
+// ===== 最後の人の画面（文字入力で答え → Geminiで判定） =====
 function renderLastPlayerScreen(container) {
-  const prevData = GameState.roundData[GameState.roundData.length - 1];
-
-  let prevContent = '';
-  if (prevData) {
-    const { actionType, actionData } = prevData;
-    if (actionType === 'ai') {
-      prevContent = `<div class="ai-result-box"><p class="ai-text">${actionData.text}</p></div>`;
-    } else if (actionType === 'drawing') {
-      prevContent = `<img src="${actionData.imageData}" class="result-drawing" alt="前の人の絵">`;
-    } else if (actionType === 'shapes') {
-      prevContent = `<img src="${actionData.imageData}" class="result-drawing" alt="前の人の図形">`;
-    } else if (actionType === 'gesture') {
-      prevContent = `<div class="gesture-stage"><div class="gesture-icon">🙌</div><p>前の人がジェスチャーで伝えます</p></div>`;
-    } else if (actionType === 'verbal') {
-      prevContent = `
-        <div class="constraint-badge">
-          <span class="constraint-label">縛り</span>
-          <span class="constraint-name">${actionData.constraint}</span>
-        </div>
-        <p class="constraint-desc">${actionData.constraintDesc}</p>
-      `;
-    }
-  }
+  const prevRecord = getPrevActionData();
+  const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
+  const correctTopic = GameState.currentTopic; // 最終お題（修飾語すべて込み）
+  const baseTopic = GameState.baseTopic;
 
   container.innerHTML = `
     <div class="action-container">
-      <h2 class="action-title">🎯 あなたが最後です！</h2>
-      ${prevContent}
-      <p class="text-dim text-center">お題が分かりましたか？<br>口頭で答えを言い、最初の人が判定してください。</p>
-      <div class="judge-section">
-        <p class="judge-title">— 最初の人が判定 —</p>
-        <button class="btn btn-success" id="correctBtn">🎉 正解！</button>
-        <button class="btn btn-danger" id="wrongBtn">😢 不正解…</button>
+      <h2 class="action-title">🎯 あなたが最後！</h2>
+      ${prevHtml}
+      <p class="action-desc-text">ヒントを見て答えを入力してください。<br>修飾語も含めて答えてみましょう。</p>
+      <div class="answer-input-box">
+        <input type="text" id="answerInput" class="answer-input" placeholder="答えを入力…" autocomplete="off">
+        <button class="btn btn-primary" id="judgeBtn">判定する ▶</button>
       </div>
+      <div id="judgeResult" style="display:none;"></div>
     </div>
   `;
 
-  document.getElementById('correctBtn').addEventListener('click', () => {
-    GameState.isCorrect = true;
-    SoundManager.playCorrect();
-    vibrate([50, 30, 50, 30, 100]);
-    showResultScreen();
-  });
+  document.getElementById('judgeBtn').onclick = async () => {
+    const answer = document.getElementById('answerInput').value.trim();
+    if (!answer) return;
 
-  document.getElementById('wrongBtn').addEventListener('click', () => {
-    GameState.isCorrect = false;
-    SoundManager.playWrong();
-    vibrate([200]);
-    showResultScreen();
-  });
+    const judgeBtn = document.getElementById('judgeBtn');
+    judgeBtn.disabled = true;
+    judgeBtn.textContent = '判定中…';
+
+    const resultDiv = document.getElementById('judgeResult');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div class="loading-box"><div class="loading-spinner"></div><p>AIが判定しています…</p></div>`;
+
+    let isCorrect = false;
+    const geminiKey = GameState.geminiApiKey || CONFIG.GEMINI_API_KEY;
+
+    if (geminiKey) {
+      // Geminiで柔軟判定
+      const prompt = `
+以下のゲームの答え合わせをしてください。
+
+【正解のお題】：「${correctTopic}」
+（これは「${baseTopic}」に修飾語が累積したものです。修飾語の解釈が多少異なっていても、最後の名詞「${baseTopic}」が正しく含まれており、修飾語のニュアンスが概ね伝わっていれば正解とみなしてください。）
+
+【プレイヤーの回答】：「${answer}」
+
+判定ルール：
+- 「${baseTopic}」という名詞が含まれていること（必須）
+- 修飾語は完全一致でなくてよい。ニュアンスや意図が伝わっていれば正解
+- 修飾語の順番は問わない
+- 「正解」または「不正解」のみ最初に書き、その後に一言理由を添えてください
+
+回答形式：
+正解 / 不正解：（どちらか一方）
+理由：（一文）
+      `.trim();
+
+      const result = await callGemini(prompt);
+      if (result) {
+        isCorrect = result.startsWith('正解');
+        resultDiv.innerHTML = `
+          <div class="judge-result-box ${isCorrect ? 'correct' : 'wrong'}">
+            <div class="judge-result-title">${isCorrect ? '🎉 正解！' : '😢 不正解…'}</div>
+            <p class="judge-result-reason">${result.replace(/^(正解|不正解)[：:]\s*/,'').split('\n').join('<br>')}</p>
+          </div>
+          <div class="correct-answer-reveal">
+            <span class="correct-label">正解のお題</span>
+            <span class="correct-value">${correctTopic}</span>
+          </div>
+          <button class="btn ${isCorrect ? 'btn-success' : 'btn-danger'}" id="goResultBtn">
+            ${isCorrect ? '🎉 リザルトへ' : '😢 リザルトへ'}
+          </button>
+        `;
+      } else {
+        // APIなし時はシンプル部分一致
+        isCorrect = answer.includes(baseTopic);
+        resultDiv.innerHTML = buildSimpleJudgeHtml(isCorrect, correctTopic);
+      }
+    } else {
+      // APIキー未設定：名詞一致で判定
+      isCorrect = answer.includes(baseTopic);
+      resultDiv.innerHTML = buildSimpleJudgeHtml(isCorrect, correctTopic);
+    }
+
+    GameState.isCorrect = isCorrect;
+    if (isCorrect) { SoundManager.playCorrect(); vibrate([50,30,50,30,100]); }
+    else           { SoundManager.playWrong();   vibrate([200]); }
+
+    const goBtn = document.getElementById('goResultBtn');
+    if (goBtn) goBtn.onclick = () => showResultScreen();
+  };
+}
+
+function buildSimpleJudgeHtml(isCorrect, correctTopic) {
+  return `
+    <div class="judge-result-box ${isCorrect ? 'correct' : 'wrong'}">
+      <div class="judge-result-title">${isCorrect ? '🎉 正解！' : '😢 不正解…'}</div>
+    </div>
+    <div class="correct-answer-reveal">
+      <span class="correct-label">正解のお題</span>
+      <span class="correct-value">${correctTopic}</span>
+    </div>
+    <button class="btn ${isCorrect ? 'btn-success' : 'btn-danger'}" id="goResultBtn">リザルトへ</button>
+  `;
 }
 
 // ===== リザルト画面 =====
@@ -354,41 +393,39 @@ function showResultScreen() {
   showScreen('resultScreen');
 
   const isCorrect = GameState.isCorrect;
-  const topic = GameState.currentTopic;
-
   document.getElementById('resultEmoji').textContent = isCorrect ? '🎉' : '😢';
   document.getElementById('resultTitle').textContent = isCorrect ? '正解！' : '不正解…';
   document.getElementById('resultTitle').className = 'result-title ' + (isCorrect ? 'correct' : 'wrong');
-  document.getElementById('resultTopicText').textContent = topic;
+
+  // 最終お題（累積修飾語つき）と元のお題を両方表示
+  document.getElementById('resultTopicText').innerHTML =
+    `${GameState.currentTopic}<br><span style="font-size:0.75rem;color:#666;">（元のお題：${GameState.baseTopic} ／ カテゴリ：${GameState.category}）</span>`;
 
   if (isCorrect) showConfetti();
 
-  // アクション履歴
-  const historyContainer = document.getElementById('actionHistory');
-  historyContainer.innerHTML = GameState.roundData.map((record, i) => {
-    const { actionType, actionData } = record;
-    const actionLabels = {
-      ai: '🤖 AI変換',
-      drawing: '🎨 絵を描く',
-      gesture: '🙌 ジェスチャー',
-      shapes: '🔷 抽象図形',
-      verbal: '💬 口頭（縛り付き）'
-    };
+  const actionLabels = {
+    ai: '🤖 AI変換', drawing: '🎨 絵を描く', flashdraw: '⚡ 5秒消え絵',
+    halftalk: '🎤 0.5秒しゃべる', gesture: '🙌 ジェスチャー',
+    shapes: '🔷 抽象図形', verbal: '💬 口頭（縛り付き）'
+  };
 
+  document.getElementById('actionHistory').innerHTML = GameState.roundData.map((record, i) => {
+    const { actionType, actionData, topicAtTime } = record;
     let contentHtml = '';
     if (actionType === 'ai') {
-      contentHtml = `<p class="ai-text" style="font-size:0.9rem;">${actionData.text}</p>`;
-    } else if (actionType === 'drawing' || actionType === 'shapes') {
-      contentHtml = `<img src="${actionData.imageData}" class="result-drawing" alt="アクション内容">`;
+      contentHtml = `<p class="ai-text" style="font-size:0.85rem;">${actionData.text}</p>`;
+    } else if (['drawing','shapes','flashdraw'].includes(actionType)) {
+      contentHtml = `<img src="${actionData.imageData}" class="result-drawing" alt="内容">`;
     } else if (actionType === 'gesture') {
-      contentHtml = `<p>ジェスチャーで伝えました 🙌</p>`;
+      contentHtml = `<p>🙌 ジェスチャーで伝えました</p>`;
+    } else if (actionType === 'halftalk') {
+      contentHtml = `<p>🎤 0.5秒しゃべりました</p>`;
     } else if (actionType === 'verbal') {
       contentHtml = `<p>縛り：<strong>${actionData.constraint}</strong><br><span class="text-dim">${actionData.constraintDesc}</span></p>`;
     }
-
     return `
       <div class="history-item">
-        <div class="history-player">${i + 1}人目</div>
+        <div class="history-player">${i + 1}人目 — ${topicAtTime ? `お題「${topicAtTime}」` : ''}</div>
         <div class="history-action-type">${actionLabels[actionType] || actionType}</div>
         ${contentHtml}
       </div>
@@ -398,25 +435,22 @@ function showResultScreen() {
 
 // ===== 紙吹雪 =====
 function showConfetti() {
-  const colors = ['#ff6b35','#ffe66d','#4ecdc4','#ff6b6b','#a8e6cf'];
-  const container = document.createElement('div');
-  container.className = 'confetti-container';
-  document.body.appendChild(container);
-
-  for (let i = 0; i < 50; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'confetti-piece';
-    piece.style.cssText = `
-      left: ${Math.random() * 100}%;
-      background: ${colors[Math.floor(Math.random() * colors.length)]};
-      animation-duration: ${1.5 + Math.random() * 2}s;
-      animation-delay: ${Math.random() * 0.5}s;
-      width: ${6 + Math.random() * 8}px;
-      height: ${6 + Math.random() * 8}px;
-      transform: rotate(${Math.random() * 360}deg);
+  const colors = ['#f0d000','#ff2d55','#0a0a0a','#ffffff','#34c759'];
+  const cont = document.createElement('div');
+  cont.className = 'confetti-container';
+  document.body.appendChild(cont);
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*0.5}s;
+      width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+      transform:rotate(${Math.random()*360}deg);
     `;
-    container.appendChild(piece);
+    cont.appendChild(p);
   }
-
-  setTimeout(() => container.remove(), 4000);
+  setTimeout(() => cont.remove(), 4000);
 }
