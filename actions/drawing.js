@@ -173,9 +173,9 @@ function spawnBugs(wrapId) {
       width:480px; height:480px;
       object-fit:contain;
       pointer-events:none;
-      left:${Math.random() * 80}%;
-      top:${Math.random() * 80}%;
-      transform:rotate(0deg);
+      left:${Math.random() * 10}%;
+      top:${Math.random() * 10}%;
+      transform:rotate(10deg);
       transition:left 0.1s linear, top 0.1s linear;
     `;
     wrap.appendChild(bug);
