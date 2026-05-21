@@ -142,7 +142,7 @@ function buildPrevContentHtml(prevRecord) {
   } else if (actionType === 'verbal') {
     inner = `<p style="font-weight:700;">縛り：${actionData.constraint}<br><span style="font-size:0.8rem;color:#555;">${actionData.constraintDesc}</span></p>`;
   } else if (actionType === 'halftalk') {
-    inner = `<div style="text-align:center;font-size:2rem;padding:12px;">🎤<br><span style="font-size:0.85rem;">0.5秒しゃべります</span></div>`;
+    inner = `<div style="text-align:center;font-size:2rem;padding:12px;">🎤<br><span style="font-size:0.85rem;">1秒しゃべります</span></div>`;
   }
 
   return `
@@ -166,14 +166,14 @@ function renderActionSelect(container, prevRecord) {
     { id: 'ai',        icon: '🤖', name: 'AI変換',        desc: '自分の解釈をAIが言い換え' },
     { id: 'drawing',   icon: '🎨', name: '絵を描く',       desc: '手描き（お邪魔虫あり）' },
     { id: 'flashdraw', icon: '⚡', name: '5秒消え絵',      desc: '5秒で消える手描き' },
-    { id: 'halftalk',  icon: '🎤', name: '0.5秒しゃべる',  desc: '0.5秒だけ声で伝える' },
+    { id: 'halftalk',  icon: '🎤', name: '1秒しゃべる',  desc: '1秒だけ声で伝える' },
     { id: 'gesture',   icon: '🙌', name: 'ジェスチャー',   desc: '身振り手振りで伝える' },
     { id: 'shapes',    icon: '🔷', name: '抽象図形',       desc: '図形を配置・色付け' },
     { id: 'verbal',    icon: '💬', name: '口頭（縛り付き）', desc: '縛りあり・最後から2人目のみ' },
   ];
 
   // 使用済みアクションはロック
-  const isSecondToLast = GameState.currentPlayerIndex === GameState.playerCount - 2;
+  const isSecondToLast = GameState.currentPlayerIndex === GameState.playerCount - 1;
 
   const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
 
@@ -405,7 +405,7 @@ function showResultScreen() {
 
   const actionLabels = {
     ai: '🤖 AI変換', drawing: '🎨 絵を描く', flashdraw: '⚡ 5秒消え絵',
-    halftalk: '🎤 0.5秒しゃべる', gesture: '🙌 ジェスチャー',
+    halftalk: '🎤 1秒しゃべる', gesture: '🙌 ジェスチャー',
     shapes: '🔷 抽象図形', verbal: '💬 口頭（縛り付き）'
   };
 
@@ -419,7 +419,7 @@ function showResultScreen() {
     } else if (actionType === 'gesture') {
       contentHtml = `<p>🙌 ジェスチャーで伝えました</p>`;
     } else if (actionType === 'halftalk') {
-      contentHtml = `<p>🎤 0.5秒しゃべりました</p>`;
+      contentHtml = `<p>🎤 1秒しゃべりました</p>`;
     } else if (actionType === 'verbal') {
       contentHtml = `<p>縛り：<strong>${actionData.constraint}</strong><br><span class="text-dim">${actionData.constraintDesc}</span></p>`;
     }
