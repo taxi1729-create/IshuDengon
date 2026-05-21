@@ -30,7 +30,7 @@ const GameState = {
   // 現在のお題文字列（修飾語 + 名詞）
   get currentTopic() {
     if (this.currentModifiers.length === 0) return this.baseTopic;
-    return this.currentModifiers.join('') + "＋なんだ";
+    return this.currentModifiers.join('') + "＋お題";
   },
 
   // 1人目が伝える現在のお題（1人目は素のお題）
