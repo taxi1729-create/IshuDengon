@@ -21,7 +21,7 @@ const GameState = {
     this.baseTopic = '';
     this.category = '';
     this.currentModifiers = [];
-    this.currentPlayerIndex = 0;
+    this.currentPlayerIndex = 1;
     this.roundData = [];
     this.isCorrect = null;
     this.usedModifiers = [];
@@ -30,9 +30,12 @@ const GameState = {
   // 現在のお題文字列（修飾語 + 名詞）
   get currentTopic() {
     if (this.currentModifiers.length === 0) return this.baseTopic;
+    return this.currentModifiers.join('') + this.baseTopic;
+  },
+  get currentTopicHide() {
+    if (this.currentModifiers.length === 0) return this.baseTopic;
     return this.currentModifiers.join('') + "＋お題";
   },
-
   // 1人目が伝える現在のお題（1人目は素のお題）
   get topicForFirstPlayer() {
     return this.baseTopic;
@@ -48,7 +51,7 @@ const GameState = {
   },
 
   get isFirstPlayer() {
-    return this.currentPlayerIndex === 0;
+    return this.currentPlayerIndex === 1;
   },
 
   // 次のプレイヤーへ進む（修飾語を1つ追加する）
