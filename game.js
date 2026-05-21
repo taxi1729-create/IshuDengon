@@ -30,7 +30,7 @@ const GameState = {
   // 現在のお題文字列（修飾語 + 名詞）
   get currentTopic() {
     if (this.currentModifiers.length === 0) return this.baseTopic;
-    return this.currentModifiers.join('') + this.baseTopic;
+    return this.currentModifiers.join('') + "＋なんだ";
   },
 
   // 1人目が伝える現在のお題（1人目は素のお題）
@@ -56,6 +56,7 @@ const GameState = {
     if (!this.isLastPlayer) {
       // 次の人に渡す前に修飾語を追加
       const newMod = getRandomModifier(this.difficulty, this.usedModifiers);
+      this.baseTopic =  this.currentModifiers;
       this.currentModifiers.unshift(newMod); // 先頭に追加（後ろの名詞にかかる形）
       this.usedModifiers.push(newMod);
     }
