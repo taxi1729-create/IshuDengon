@@ -36,21 +36,56 @@ function renderHalfTalkAction(container, topic, prevRecord, onComplete, onResele
 
   startBtn.onclick = () => {
     startBtn.disabled = true;
-    statusEl.textContent = '今すぐしゃべってください！';
     countEl.style.display = 'block';
-    countEl.textContent = 'GO!';
-
+    statusEl.textContent = 'まだ喋ってはいけません。';
+    countEl.textContent = '3秒前!';
     SoundManager && SoundManager.playBeep && SoundManager.playBeep(880, 0.05, 'square');
     vibrate && vibrate([30]);
-
+    settimer
     // 0.5秒後に終了
+ startBtn.onclick = () => {
+    startBtn.disabled = true;
+    countEl.style.display = 'block';
+    statusEl.textContent = 'まだ喋ってはいけません。';
+    
+    // 3秒前
+    countEl.textContent = '3秒前!';
+   SoundManager && SoundManager.playBeep && SoundManager.playBeep(880, 0.05, 'square');
+
+    vibrate && vibrate([30]);
+    playFeedback(880);
+
+    // 1秒後（2秒前）
     setTimeout(() => {
-      SoundManager && SoundManager.playBuzz && SoundManager.playBuzz();
-      vibrate && vibrate([80]);
-      countEl.textContent = '⏹ 終了！';
-      statusEl.textContent = '1秒経過しました！次の人へ渡してください。';
-      doneBtn.style.display = 'block';
-    }, 3500);
+        countEl.textContent = '2秒前!';
+      SoundManager && SoundManager.playBeep && SoundManager.playBeep(880, 0.05, 'square');
+
+    vibrate && vibrate([30]);
+        playFeedback(880);
+
+        // 2秒後（1秒前）
+        setTimeout(() => {
+            countEl.textContent = '1秒前!';
+          SoundManager && SoundManager.playBeep && SoundManager.playBeep(880, 0.05, 'square');
+
+    vibrate && vibrate([30]);
+            playFeedback(880);
+        setTimeout(() => {
+            countEl.textContent = 'GO!!';
+            statusEl.textContent = '今思いの丈を伝えて！';
+            playFeedback(880);
+            // 3秒後（終了）
+            setTimeout(() => {
+                SoundManager && SoundManager.playBuzz && SoundManager.playBuzz();
+                vibrate && vibrate([80]);
+                countEl.textContent = '⏹ 終了！';
+                statusEl.textContent = '次の人へ渡してください。';
+                doneBtn.style.display = 'block';
+            }, 1000);
+        }, 1000);
+    }, 1000);
+    }, 1000);
+};
   };
 
   doneBtn.onclick = () => onComplete({ note: '1秒しゃべりました' });
