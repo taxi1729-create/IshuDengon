@@ -51,14 +51,19 @@ const GameState = {
     return this.currentPlayerIndex === 0;
   },
 
-  // 次のプレイヤーへ進む（修飾語を1つ追加する）
+  // 次のプレイヤーへ進む
+  // 修飾語は「次の人（インデックス+1）が最後の人でない」場合のみ追加する。
+  // つまり最後の人に渡るターンでは修飾語を追加しない。
   nextPlayer() {
-    if (!this.isLastPlayer) {
-      // 次の人に渡す前に修飾語を追加
+    const nextIdx = this.currentPlayerIndex + 1;
+    const nextIsLast = nextIdx === this.playerCount - 1;
+    if (!nextIsLast) {
+      // 次の人がまだ中間プレイヤーなので修飾語を追加
       const newMod = getRandomModifier(this.difficulty, this.usedModifiers);
-      this.currentModifiers.unshift(newMod); // 先頭に追加（後ろの名詞にかかる形）
+      this.currentModifiers.unshift(newMod);
       this.usedModifiers.push(newMod);
     }
+    // 次の人が最後の人の場合は修飾語を追加しない（判定は現在のお題のまま）
     this.currentPlayerIndex++;
   },
 
