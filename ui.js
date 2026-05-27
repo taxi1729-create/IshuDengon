@@ -235,7 +235,7 @@ function renderActionSelect(container, prevRecord) {
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
   // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   = ${newMod};//GameState.currentTopic;
+  const topic   = GameState.currentTopic;
   const prevData = prevRecord ? prevRecord.actionData : null;
 
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
