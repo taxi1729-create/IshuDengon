@@ -159,8 +159,15 @@ function buildPrevContentHtml(prevRecord) {
     : null;
 
   const modifierHtml = newModifier
+      if (GameState.isLastPlayer) {
+    ? `<div class="new-modifier-chip">推測して、答えてみよう</div>`
+    : '';
+  } else {
     ? `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`
     : '';
+  }
+
+
 
   return `
     <div class="prev-hint-box">
