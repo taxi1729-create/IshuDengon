@@ -157,12 +157,14 @@ function buildPrevContentHtml(prevRecord) {
   const newModifier = GameState.currentModifiers.length > 0
     ? GameState.currentModifiers[0]   // 一番最近追加された修飾語（unshiftしているので先頭）
     : null;
-
-const modifierHtml = GameState.isLastPlayer 
-  ? `<div class="new-modifier-chip">推測して、答えてみよう</div>` // 真（true）のとき
-  : `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`; // 偽（false）のとき
-
-
+let modifierHtml = '';
+if (GameState.isLastPlayer) {
+    // ラストプレイヤー（回答者）へのメッセージ
+    modifierHtml = `<div class="new-modifier-chip">推測して、答えてみよう！</div>`;
+  } else if (newModifier) {
+    // それ以外のプレイヤーへの修飾語表示
+    modifierHtml = `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`;
+  }
 
   return `
     <div class="prev-hint-box">
