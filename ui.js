@@ -157,8 +157,8 @@ function buildPrevContentHtml(prevRecord) {
   const newModifier = GameState.currentModifiers.length > 0
     ? GameState.currentModifiers[0]   // 一番最近追加された修飾語（unshiftしているので先頭）
     : null;
-let modifierHtml = '';
-if (GameState.isLastPlayer) {
+  let modifierHtml = '';
+  if (GameState.isLastPlayer) {
     // ラストプレイヤー（回答者）へのメッセージ
     modifierHtml = `<div class="new-modifier-chip">推測して、答えてみよう！</div>`;
   } else if (newModifier) {
@@ -239,7 +239,7 @@ function renderActionSelect(container, prevRecord) {
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
   // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   =  "＋[お題]";//GameState.currentTopic;
+  const topic   =  ${newMod}"＋[お題]";//GameState.currentTopic;
   const prevData = prevRecord ? prevRecord.actionData : null;
 
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
