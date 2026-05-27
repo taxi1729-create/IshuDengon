@@ -235,7 +235,7 @@ function renderActionSelect(container, prevRecord) {
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
   // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   = ${newMod};//GameState.currentTopic;
+  const topic   = GameState.currentTopic;
   const prevData = prevRecord ? prevRecord.actionData : null;
 
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
@@ -312,7 +312,7 @@ function renderLastPlayerScreen(container) {
   container.innerHTML = `
     <div class="action-container">
       <h2 class="action-title">🎯 あなたが最後！</h2>
-      ${prevHtml}
+
       <p class="action-desc-text">ヒントを見て答えを入力してください。<br>修飾語も含めて答えてみましょう！</p>
       <div class="answer-input-box">
         <input type="text" id="answerInput" class="answer-input"
