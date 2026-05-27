@@ -203,7 +203,7 @@ function renderActionSelect(container, prevRecord) {
           <span class="current-topic-value">${newMod}</span>
         </div>
       ` : ''}
-      <p class="action-select-title">アクションを選んでください</p>
+      <p class="action-select-title">前の人の伝えたかったことを含めて次の人に伝えましょう。アクションを選んでください</p>
       <div class="action-grid">
         ${actions.map(a => {
           const isLocked = (a.id === 'verbal' && !isSecondToLast) || usedActions.includes(a.id);
@@ -235,7 +235,7 @@ function renderActionSelect(container, prevRecord) {
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
   // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] : GameState.currentTopic;
+  const topic   = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] +'+先ほどの伝言': GameState.currentTopic;
 
   const prevData = prevRecord ? prevRecord.actionData : null;
 
