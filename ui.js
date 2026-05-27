@@ -157,14 +157,10 @@ function buildPrevContentHtml(prevRecord) {
   const newModifier = GameState.currentModifiers.length > 0
     ? GameState.currentModifiers[0]   // 一番最近追加された修飾語（unshiftしているので先頭）
     : null;
-  let modifierHtml = '';
-  if (GameState.isLastPlayer) {
-    // ラストプレイヤー（回答者）へのメッセージ
-    modifierHtml = `<div class="new-modifier-chip">推測して、答えてみよう！</div>`;
-  } else if (newModifier) {
-    // それ以外のプレイヤーへの修飾語表示
-    modifierHtml = `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`;
-  }
+
+  const modifierHtml = newModifier
+    ? `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`
+    : '';
 
   return `
     <div class="prev-hint-box">
@@ -239,7 +235,7 @@ function renderActionSelect(container, prevRecord) {
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
   // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   =  ${newMod}"＋[お題]";//GameState.currentTopic;
+  const topic   = ${newMod};//GameState.currentTopic;
   const prevData = prevRecord ? prevRecord.actionData : null;
 
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
@@ -312,11 +308,11 @@ function renderLastPlayerScreen(container) {
   //   この時点の GameState.currentTopic が正解お題（修飾語追加済み最終形）
   const correctTopic = GameState.currentTopic;
   const baseTopic    = GameState.baseTopic;
-
+      //${prevHtml}
   container.innerHTML = `
     <div class="action-container">
       <h2 class="action-title">🎯 あなたが最後！</h2>
-      ${prevHtml}
+
       <p class="action-desc-text">ヒントを見て答えを入力してください。<br>修飾語も含めて答えてみましょう！</p>
       <div class="answer-input-box">
         <input type="text" id="answerInput" class="answer-input"
