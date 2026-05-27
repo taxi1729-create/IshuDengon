@@ -308,11 +308,11 @@ function renderLastPlayerScreen(container) {
   //   この時点の GameState.currentTopic が正解お題（修飾語追加済み最終形）
   const correctTopic = GameState.currentTopic;
   const baseTopic    = GameState.baseTopic;
-      //${prevHtml}
+
   container.innerHTML = `
     <div class="action-container">
       <h2 class="action-title">🎯 あなたが最後！</h2>
-
+      ${prevHtml}
       <p class="action-desc-text">ヒントを見て答えを入力してください。<br>修飾語も含めて答えてみましょう！</p>
       <div class="answer-input-box">
         <input type="text" id="answerInput" class="answer-input"
