@@ -51,8 +51,9 @@ function initTitleScreen() {
 function startGame() {
   GameState.reset();
   const { topic, category } = getRandomTopicWithCategory();
-  GameState.baseTopic = topic;
-  GameState.category  = category;
+  GameState.baseTopic    = topic;
+  GameState.category     = category;
+  GameState.modifierOrder = generateModifierOrder(); // 修飾語追加順序を生成
   showScreen('gameScreen');
   renderPlayerTurn();
 }
@@ -74,14 +75,14 @@ function updateProgressDots() {
   for (let i = 0; i < GameState.playerCount; i++) {
     const dot = document.createElement('div');
     dot.className = 'progress-dot';
-    if (i < GameState.currentPlayerIndex)      dot.classList.add('done');
-    else if (i === GameState.currentPlayerIndex) dot.classList.add('current');
+    if (i < GameState.currentPlayerIndex)        dot.classList.add('done');
+    else if (i === GameState.currentPlayerIndex)  dot.classList.add('current');
     container.appendChild(dot);
   }
   document.getElementById('playerBadge').textContent = `${GameState.currentPlayer}人目`;
 }
 
-// ===== プレイヤー確認画面 =====
+// ===== プレイヤー確認 =====
 function renderPlayerConfirm(container, idx) {
   container.innerHTML = `
     <div class="player-confirm">
@@ -92,13 +93,9 @@ function renderPlayerConfirm(container, idx) {
     </div>
   `;
   document.getElementById('confirmReadyBtn').addEventListener('click', () => {
-    SoundManager.playClick();
-    vibrate([20]);
-    if (GameState.isFirstPlayer) {
-      renderTopicReveal(container);
-    } else {
-      renderActionSelect(container, getPrevRecord());
-    }
+    SoundManager.playClick(); vibrate([20]);
+    if (GameState.isFirstPlayer) renderTopicReveal(container);
+    else                          renderActionSelect(container, getPrevRecord());
   });
 }
 
@@ -106,7 +103,7 @@ function getPrevRecord() {
   return GameState.roundData[GameState.roundData.length - 1] || null;
 }
 
-// ===== お題表示（1人目のみ） =====
+// ===== お題表示（1人目） =====
 function renderTopicReveal(container) {
   container.innerHTML = `
     <div class="topic-reveal">
@@ -124,42 +121,44 @@ function renderTopicReveal(container) {
 }
 
 // ===== 前のアクション内容HTML生成 =====
-// ※ 6番の修正：前の人の「お題文面」（topicAtTime）は表示しない
-//               追加された修飾語（新しく加わった1語）のみ表示する
-// ※ 3番の修正：flashdraw の絵はアクション選択画面では表示しない
+// ・前の人のお題文面は非表示
+// ・今回追加された修飾語（カテゴリラベル付き）のみ表示
+// ・flashdraw はアクション選択画面で絵を非表示
 function buildPrevContentHtml(prevRecord) {
   if (!prevRecord) return '';
   const { actionType, actionData } = prevRecord;
 
-  // flashdraw はアクション選択画面に絵を出さない（「5秒消え絵でした」とだけ伝える）
   let inner = '';
   if (actionType === 'ai') {
     inner = `<p class="ai-text">${actionData.text}</p>`;
   } else if (actionType === 'drawing') {
-    // お邪魔虫付き（固定座標）
     inner = typeof buildBugImageHtml === 'function'
       ? buildBugImageHtml(actionData.imageData, actionData.bugPositions)
       : `<img src="${actionData.imageData}" class="result-drawing" alt="前の人の絵">`;
   } else if (actionType === 'shapes') {
     inner = `<img src="${actionData.imageData}" class="result-drawing" alt="前の人の図形">`;
   } else if (actionType === 'flashdraw') {
-    // ★ 絵は見せない
-    inner = `<div class="flash-hidden-notice">⚡ 5秒消え絵でした<br><span style="font-size:0.8rem;">絵の内容は一瞬しか見えませんでした</span></div>`;
+    inner = `<div class="flash-hidden-notice">⚡ 5秒消え絵でした<br><span style="font-size:0.8rem;">絵は一瞬しか見えませんでした</span></div>`;
   } else if (actionType === 'gesture') {
     inner = `<div style="text-align:center;padding:12px;font-size:1.8rem;">🙌<br><span style="font-size:0.85rem;">ジェスチャーで伝えます</span></div>`;
+  } else if (actionType === 'gesturehint') {
+    inner = `<div style="text-align:center;padding:12px;font-size:1.8rem;">🙌✍️<br><span style="font-size:0.85rem;">ジェスチャー＋ヒント「${actionData.hintText || ''}」で伝えます</span></div>`;
   } else if (actionType === 'halftalk') {
     inner = `<div style="text-align:center;padding:12px;font-size:1.8rem;">🎤<br><span style="font-size:0.85rem;">1秒しゃべります</span></div>`;
   } else if (actionType === 'verbal') {
     inner = `<p style="font-weight:700;">縛り：${actionData.constraint}<br><span style="font-size:0.8rem;color:#555;">${actionData.constraintDesc}</span></p>`;
   }
 
-  // ★ 6番：お題文面は出さない。追加された修飾語（currentModifiers[0]）だけ見せる
-  const newModifier = GameState.currentModifiers.length > 0
-    ? GameState.currentModifiers[0]   // 一番最近追加された修飾語（unshiftしているので先頭）
-    : null;
+  // 今回追加された修飾語＋カテゴリラベル
+  const newModifier  = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] : null;
+  const newCatKey    = GameState.modifierCategories.length > 0 ? GameState.modifierCategories[0] : null;
+  const catLabel     = newCatKey ? getModifierCategoryLabel(newCatKey) : null;
 
   const modifierHtml = newModifier
-    ? `<div class="new-modifier-chip">今回追加された修飾語：<strong>「${newModifier}」</strong></div>`
+    ? `<div class="new-modifier-chip">
+         <span class="modifier-cat-badge">${catLabel || '修飾語'}</span>
+         今回追加：<strong>「${newModifier}」</strong>
+       </div>`
     : '';
 
   return `
@@ -172,26 +171,24 @@ function buildPrevContentHtml(prevRecord) {
 }
 
 // ===== アクション選択画面 =====
-// 前の人のヒントと「追加された修飾語」を表示（お題全体は非表示）
 function renderActionSelect(container, prevRecord) {
-  const usedActions   = GameState.roundData.map(r => r.actionType);
+  const usedActions    = GameState.roundData.map(r => r.actionType);
   const isSecondToLast = GameState.currentPlayerIndex === GameState.playerCount - 2;
-
-  // ★ 6番：アクション選択でも「あなたが伝えるお題全体」は表示しない
-  //         追加された修飾語だけを示すヒントは buildPrevContentHtml 内で表示済み
-  const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
-
-  // 今回追加された修飾語（1人目は表示なし）
-  const newMod = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] : null;
+  const prevHtml       = prevRecord ? buildPrevContentHtml(prevRecord) : '';
+  const newMod         = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] : null;
+  const newCatKey      = GameState.modifierCategories.length > 0 ? GameState.modifierCategories[0] : null;
+  const catLabel       = newCatKey ? getModifierCategoryLabel(newCatKey) : '修飾語';
 
   const actions = [
-    { id: 'ai',        icon: '🤖', name: 'AI変換',         desc: '自分の解釈をAIが言い換え' },
-    { id: 'drawing',   icon: '🎨', name: '絵を描く',        desc: '手描き（お邪魔虫あり）' },
-    { id: 'flashdraw', icon: '⚡', name: '5秒消え絵',       desc: '5秒で左から消える手描き' },
-    { id: 'halftalk',  icon: '🎤', name: '1秒しゃべる',     desc: '3秒後に1秒だけ声で伝える' },
-    { id: 'gesture',   icon: '🙌', name: 'ジェスチャー',    desc: '身振り手振りで伝える' },
-    { id: 'shapes',    icon: '🔷', name: '抽象図形',        desc: '図形を配置・色付け' },
-    { id: 'verbal',    icon: '💬', name: '口頭（縛り付き）', desc: '縛りあり・最後から2人目のみ' },
+    { id: 'ai',          icon: '🤖', name: 'AI変換',            desc: '自分の解釈をAIが言い換え' },
+    { id: 'drawing',     icon: '🎨', name: '絵を描く',           desc: '手描き（お邪魔虫あり）' },
+    { id: 'flashdraw',   icon: '⚡', name: '5秒消え絵',          desc: '準備完了後5秒で左から消える' },
+    { id: 'halftalk',    icon: '🎤', name: '1秒しゃべる',        desc: '3秒カウント後1秒だけ声で' },
+    { id: 'gesture',     icon: '🙌', name: 'ジェスチャー',       desc: '身振り手振りで伝える' },
+    { id: 'gesturehint', icon: '🙌✍️', name: 'ジェスチャー＋ヒント', desc: '修飾語の先頭2文字も見せる' },
+    { id: 'shapes',      icon: '🔷', name: '抽象図形',           desc: '図形を配置・色付け' },
+    { id: 'verbal',      icon: '💬', name: '口頭（縛り付き）',   desc: '縛りあり・最後から2人目のみ',
+      locked: !isSecondToLast, lockReason: !isSecondToLast ? '最後から2人目のみ' : null },
   ];
 
   container.innerHTML = `
@@ -199,23 +196,21 @@ function renderActionSelect(container, prevRecord) {
       ${prevHtml}
       ${newMod ? `
         <div class="current-topic-display">
-          <span class="current-topic-label">あなたに追加された修飾語</span>
+          <span class="current-topic-label">追加された修飾語（${catLabel}）</span>
           <span class="current-topic-value">${newMod}</span>
         </div>
       ` : ''}
       <p class="action-select-title">アクションを選んでください</p>
       <div class="action-grid">
         ${actions.map(a => {
-          const isLocked = (a.id === 'verbal' && !isSecondToLast) || usedActions.includes(a.id);
-          const lockReason = a.id === 'verbal' && !isSecondToLast
-            ? '最後から2人目のみ'
-            : usedActions.includes(a.id) ? '使用済み' : null;
+          const locked = a.locked || usedActions.includes(a.id);
+          const reason = a.locked ? a.lockReason : (usedActions.includes(a.id) ? '使用済み' : null);
           return `
-            <div class="action-card ${isLocked ? 'locked' : ''}" data-action="${a.id}">
+            <div class="action-card ${locked ? 'locked' : ''}" data-action="${a.id}">
               <div class="action-icon">${a.icon}</div>
               <div class="action-name">${a.name}</div>
               <div class="action-desc">${a.desc}</div>
-              ${lockReason ? `<div class="action-badge">${lockReason}</div>` : ''}
+              ${reason ? `<div class="action-badge">${reason}</div>` : ''}
             </div>
           `;
         }).join('')}
@@ -225,8 +220,7 @@ function renderActionSelect(container, prevRecord) {
 
   document.querySelectorAll('.action-card:not(.locked)').forEach(card => {
     card.addEventListener('click', () => {
-      SoundManager.playClick();
-      vibrate([20]);
+      SoundManager.playClick(); vibrate([20]);
       renderActionExecute(container, card.dataset.action, prevRecord);
     });
   });
@@ -234,39 +228,23 @@ function renderActionSelect(container, prevRecord) {
 
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
-  // ★ 各アクションには「累積お題」を渡す（アクション実行画面では伝えるお題を確認できる）
-  const topic   = GameState.currentTopic;
-  const prevData = prevRecord ? prevRecord.actionData : null;
-
+  const topic    = GameState.currentTopic;
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
   const complete = (data) => onActionComplete(actionId, data);
 
   switch (actionId) {
-    case 'ai':
-      renderAiTransformAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'drawing':
-      renderDrawingAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'flashdraw':
-      renderFlashDrawAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'halftalk':
-      renderHalfTalkAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'gesture':
-      renderGestureAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'shapes':
-      renderShapesAction(container, topic, prevRecord, complete, reselect);
-      break;
-    case 'verbal':
-      renderVerbalAction(container, prevData, complete, reselect);
-      break;
+    case 'ai':          renderAiTransformAction(container, topic, prevRecord, complete, reselect); break;
+    case 'drawing':     renderDrawingAction(container, topic, prevRecord, complete, reselect);     break;
+    case 'flashdraw':   renderFlashDrawAction(container, topic, prevRecord, complete, reselect);   break;
+    case 'halftalk':    renderHalfTalkAction(container, topic, prevRecord, complete, reselect);    break;
+    case 'gesture':     renderGestureAction(container, topic, prevRecord, complete, reselect);     break;
+    case 'gesturehint': renderGestureHintAction(container, topic, prevRecord, complete, reselect); break;
+    case 'shapes':      renderShapesAction(container, topic, prevRecord, complete, reselect);      break;
+    case 'verbal':      renderVerbalAction(container, prevRecord ? prevRecord.actionData : null, complete, reselect); break;
   }
 }
 
-// ===== ジェスチャーアクション =====
+// ===== ジェスチャー =====
 function renderGestureAction(container, topic, prevRecord, onComplete, onReselect) {
   const prevHtml = prevRecord ? buildPrevContentHtml(prevRecord) : '';
   container.innerHTML = `
@@ -286,7 +264,7 @@ function renderGestureAction(container, topic, prevRecord, onComplete, onReselec
       <button class="btn btn-reselect" id="gestureReselectBtn">↩ アクションを選び直す</button>
     </div>
   `;
-  document.getElementById('gestureDoneBtn').onclick  = () => onComplete({ note: 'ジェスチャー' });
+  document.getElementById('gestureDoneBtn').onclick   = () => onComplete({ note: 'ジェスチャー' });
   document.getElementById('gestureReselectBtn').onclick = onReselect;
 }
 
@@ -299,13 +277,10 @@ function onActionComplete(actionType, actionData) {
   renderPlayerTurn();
 }
 
-// ===== 最後の人の画面（文字入力 → Gemini判定） =====
+// ===== 最後の人（文字入力 → Gemini判定） =====
 function renderLastPlayerScreen(container) {
-  const prevRecord = getPrevRecord();
-  const prevHtml   = prevRecord ? buildPrevContentHtml(prevRecord) : '';
-  // ★ 7番修正：判定に使うお題は nextPlayer() で修飾語が追加される前の状態
-  //   renderLastPlayerScreen は isLastPlayer が true の時点で呼ばれる。
-  //   この時点の GameState.currentTopic が正解お題（修飾語追加済み最終形）
+  const prevRecord   = getPrevRecord();
+  const prevHtml     = prevRecord ? buildPrevContentHtml(prevRecord) : '';
   const correctTopic = GameState.currentTopic;
   const baseTopic    = GameState.baseTopic;
 
@@ -324,14 +299,13 @@ function renderLastPlayerScreen(container) {
   `;
 
   document.getElementById('judgeBtn').onclick = async () => {
-    const answer   = document.getElementById('answerInput').value.trim();
+    const answer  = document.getElementById('answerInput').value.trim();
     if (!answer) return;
 
-    const judgeBtn = document.getElementById('judgeBtn');
+    const judgeBtn  = document.getElementById('judgeBtn');
+    const resultDiv = document.getElementById('judgeResult');
     judgeBtn.disabled = true;
     judgeBtn.textContent = '判定中…';
-
-    const resultDiv = document.getElementById('judgeResult');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = `<div class="loading-box"><div class="loading-spinner"></div><p>AIが判定しています…</p></div>`;
 
@@ -365,7 +339,7 @@ function renderLastPlayerScreen(container) {
       const result = await callGemini(prompt);
       if (result) {
         isCorrect = result.trimStart().startsWith('正解');
-        const lines = result.split('\n').filter(l => l.trim());
+        const lines      = result.split('\n').filter(l => l.trim());
         const reasonLine = lines.find(l => l.startsWith('理由')) || lines[1] || '';
         resultDiv.innerHTML = `
           <div class="judge-result-box ${isCorrect ? 'correct' : 'wrong'}">
@@ -376,9 +350,7 @@ function renderLastPlayerScreen(container) {
             <span class="correct-label">正解のお題</span>
             <span class="correct-value">${correctTopic}</span>
           </div>
-          <button class="btn ${isCorrect ? 'btn-success' : 'btn-danger'}" id="goResultBtn">
-            リザルトへ ▶
-          </button>
+          <button class="btn ${isCorrect ? 'btn-success' : 'btn-danger'}" id="goResultBtn">リザルトへ ▶</button>
         `;
       } else {
         isCorrect = answer.includes(baseTopic);
@@ -390,7 +362,7 @@ function renderLastPlayerScreen(container) {
     }
 
     GameState.isCorrect = isCorrect;
-    if (isCorrect) { SoundManager.playCorrect(); vibrate([50, 30, 50, 30, 100]); }
+    if (isCorrect) { SoundManager.playCorrect(); vibrate([50,30,50,30,100]); }
     else           { SoundManager.playWrong();   vibrate([200]); }
 
     const goBtn = document.getElementById('goResultBtn');
@@ -414,25 +386,26 @@ function buildSimpleJudgeHtml(isCorrect, correctTopic) {
 // ===== リザルト画面 =====
 function showResultScreen() {
   showScreen('resultScreen');
-
   const isCorrect = GameState.isCorrect;
+
   document.getElementById('resultEmoji').textContent = isCorrect ? '🎉' : '😢';
   document.getElementById('resultTitle').textContent  = isCorrect ? '正解！' : '不正解…';
   document.getElementById('resultTitle').className    = 'result-title ' + (isCorrect ? 'correct' : 'wrong');
   document.getElementById('resultTopicText').innerHTML =
-    `${GameState.currentTopic}<br><span style="font-size:0.75rem;color:#666;">（元のお題：${GameState.baseTopic} ／ カテゴリ：${GameState.category}）</span>`;
+    `${GameState.currentTopic}<br>
+     <span style="font-size:0.75rem;color:#666;">元のお題：${GameState.baseTopic} ／ カテゴリ：${GameState.category}</span>`;
 
   if (isCorrect) showConfetti();
 
   const actionLabels = {
     ai: '🤖 AI変換', drawing: '🎨 絵を描く', flashdraw: '⚡ 5秒消え絵',
     halftalk: '🎤 1秒しゃべる', gesture: '🙌 ジェスチャー',
+    gesturehint: '🙌✍️ ジェスチャー＋ヒント',
     shapes: '🔷 抽象図形', verbal: '💬 口頭（縛り付き）'
   };
 
-  // ★ 4番修正：flashdraw のリザルトは5秒ワイプ→再出現。他のアクションは通常表示。
   document.getElementById('actionHistory').innerHTML = GameState.roundData.map((record, i) => {
-    const { actionType, actionData, topicAtTime } = record;
+    const { actionType, actionData } = record;
     let contentHtml = '';
 
     if (actionType === 'ai') {
@@ -444,21 +417,20 @@ function showResultScreen() {
     } else if (actionType === 'shapes') {
       contentHtml = `<img src="${actionData.imageData}" class="result-drawing" alt="図形">`;
     } else if (actionType === 'flashdraw') {
-      // ★ 4番：ユニークIDを付けて後でwipe処理
       const uid = `flash_result_${i}`;
       contentHtml = `
         <div class="flash-result-wrap" id="wrap_${uid}">
-          <img id="${uid}" src="${actionData.imageData}"
-            class="result-drawing flash-wipe-img" alt="消え絵">
+          <img id="${uid}" src="${actionData.imageData}" class="result-drawing flash-wipe-img" alt="消え絵">
           <div id="timer_${uid}" class="flash-timer-overlay">5</div>
         </div>
-        <button class="btn btn-secondary flash-replay-btn" id="replay_${uid}"
-          style="display:none;font-size:0.8rem;padding:8px;" data-img="${actionData.imageData}" data-uid="${uid}">
+        <button class="btn btn-secondary flash-replay-btn" id="replay_${uid}" style="display:none;font-size:0.8rem;padding:8px;">
           🔄 もう一度見る
         </button>
       `;
     } else if (actionType === 'gesture') {
       contentHtml = `<p>🙌 ジェスチャーで伝えました</p>`;
+    } else if (actionType === 'gesturehint') {
+      contentHtml = `<p>🙌✍️ ジェスチャー＋ヒント「<strong>${actionData.hintText}</strong>」で伝えました</p>`;
     } else if (actionType === 'halftalk') {
       contentHtml = `<p>🎤 1秒しゃべりました</p>`;
     } else if (actionType === 'verbal') {
@@ -474,7 +446,7 @@ function showResultScreen() {
     `;
   }).join('');
 
-  // ★ 4番：flashdraw のリザルト画像に対してワイプ処理を実行
+  // flashdraw リザルト処理（ワイプ→5秒後再出現ループ）
   GameState.roundData.forEach((record, i) => {
     if (record.actionType !== 'flashdraw') return;
     const uid      = `flash_result_${i}`;
@@ -483,55 +455,35 @@ function showResultScreen() {
     const replayBtn = document.getElementById(`replay_${uid}`);
     if (!imgEl) return;
 
-    // 5秒ワイプアウト
-    startFlashWipeOnElement(imgEl, 5, () => {
-      // 消えた後にタイマー非表示・再生ボタン表示
-      if (timerEl)   timerEl.style.display  = 'none';
-      if (replayBtn) replayBtn.style.display = 'block';
-
-      // ★ 5秒後に再出現
-      setTimeout(() => {
-        if (imgEl) {
+    function runWipe() {
+      startFlashWipeOnElement(imgEl, 5, () => {
+        if (timerEl)    timerEl.style.display  = 'none';
+        if (replayBtn)  replayBtn.style.display = 'block';
+        // 5秒後に再出現→またワイプ
+        setTimeout(() => {
           imgEl.style.transition = 'clip-path 0.8s ease';
           imgEl.style.clipPath   = 'inset(0 0% 0 0)';
-        }
-        if (replayBtn) replayBtn.style.display = 'none';
-        // また5秒後に消える（繰り返し）
-        setTimeout(() => {
-          startFlashWipeOnElement(imgEl, 5, () => {
-            if (replayBtn) replayBtn.style.display = 'block';
-          });
-        }, 1000);
-      }, 5000);
-    });
+          if (replayBtn) replayBtn.style.display = 'none';
+          if (timerEl)   { timerEl.style.display = 'block'; timerEl.textContent = 5; }
+          setTimeout(() => runWipe(), 1000);
+        }, 5000);
+      });
+      let rem = 5;
+      const tick = setInterval(() => {
+        rem--;
+        if (timerEl) timerEl.textContent = rem > 0 ? rem : '';
+        if (rem <= 0) clearInterval(tick);
+      }, 1000);
+    }
+    runWipe();
 
-    // タイマー表示を1秒ごとに更新
-    let rem = 5;
-    const tick = setInterval(() => {
-      rem--;
-      if (timerEl) timerEl.textContent = rem > 0 ? rem : '';
-      if (rem <= 0) clearInterval(tick);
-    }, 1000);
-
-    // 再生ボタン押下で手動再生
     if (replayBtn) {
       replayBtn.onclick = () => {
         replayBtn.style.display = 'none';
         imgEl.style.transition  = 'clip-path 0.5s ease';
         imgEl.style.clipPath    = 'inset(0 0% 0 0)';
         if (timerEl) { timerEl.style.display = 'block'; timerEl.textContent = 5; }
-        setTimeout(() => {
-          startFlashWipeOnElement(imgEl, 5, () => {
-            if (timerEl)   timerEl.style.display  = 'none';
-            if (replayBtn) replayBtn.style.display = 'block';
-          });
-          let r2 = 5;
-          const t2 = setInterval(() => {
-            r2--;
-            if (timerEl) timerEl.textContent = r2 > 0 ? r2 : '';
-            if (r2 <= 0) clearInterval(t2);
-          }, 1000);
-        }, 600);
+        setTimeout(() => runWipe(), 600);
       };
     }
   });

@@ -8,19 +8,22 @@ const GameState = {
   geminiApiKey: '',
 
   // ゲーム中の状態
-  baseTopic: '',        // 最初のお題（名詞）
-  category: '',         // カテゴリ
-  currentModifiers: [], // 累積された修飾語リスト
+  baseTopic: '',
+  category: '',
+  currentModifiers: [],      // 累積修飾語（文字列）
+  modifierCategories: [],    // 各修飾語のカテゴリキー（表示用）
+  modifierOrder: [],         // このゲームの修飾語追加順序（generateModifierOrderで生成）
   currentPlayerIndex: 0,
-  roundData: [],        // 各プレイヤーのアクション記録
+  roundData: [],
   isCorrect: null,
-  usedModifiers: [],    // 重複防止
+  usedModifiers: [],
 
-  // リセット
   reset() {
     this.baseTopic = '';
     this.category = '';
     this.currentModifiers = [];
+    this.modifierCategories = [];
+    this.modifierOrder = [];
     this.currentPlayerIndex = 0;
     this.roundData = [];
     this.isCorrect = null;
@@ -33,37 +36,27 @@ const GameState = {
     return this.currentModifiers.join('') + this.baseTopic;
   },
 
-  // 1人目が伝える現在のお題（1人目は素のお題）
-  get topicForFirstPlayer() {
-    return this.baseTopic;
-  },
-
-  // 現在のプレイヤー番号（1始まり）
-  get currentPlayer() {
-    return this.currentPlayerIndex + 1;
-  },
-
-  get isLastPlayer() {
-    return this.currentPlayerIndex === this.playerCount - 1;
-  },
-
-  get isFirstPlayer() {
-    return this.currentPlayerIndex === 0;
-  },
+  get currentPlayer() { return this.currentPlayerIndex + 1; },
+  get isLastPlayer()  { return this.currentPlayerIndex === this.playerCount - 1; },
+  get isFirstPlayer() { return this.currentPlayerIndex === 0; },
 
   // 次のプレイヤーへ進む
-  // 修飾語は「次の人（インデックス+1）が最後の人でない」場合のみ追加する。
-  // つまり最後の人に渡るターンでは修飾語を追加しない。
+  // 修飾語は「次の人が最後の人でない場合」のみ追加
   nextPlayer() {
-    const nextIdx = this.currentPlayerIndex + 1;
+    const nextIdx    = this.currentPlayerIndex + 1;
     const nextIsLast = nextIdx === this.playerCount - 1;
+
     if (!nextIsLast) {
-      // 次の人がまだ中間プレイヤーなので修飾語を追加
-      const newMod = getRandomModifier(this.difficulty, this.usedModifiers);
-      this.currentModifiers.unshift(newMod);
+      // 修飾語フェーズのインデックス = すでに追加された数
+      const phaseIdx  = this.currentModifiers.length;
+      const catKey    = this.modifierOrder[phaseIdx] || 'outer'; // 順序を使い切ったら外見
+      const newMod    = getModifierFromCategory(catKey, this.difficulty, this.usedModifiers);
+
+      this.currentModifiers.unshift(newMod);   // 先頭に追加（最新修飾語が[0]になる）
+      this.modifierCategories.unshift(catKey);
       this.usedModifiers.push(newMod);
     }
-    // 次の人が最後の人の場合は修飾語を追加しない（判定は現在のお題のまま）
+
     this.currentPlayerIndex++;
   },
 
@@ -74,6 +67,9 @@ const GameState = {
       actionType,
       actionData,
       topicAtTime: this.currentTopic,
+      // 今回追加された修飾語とそのカテゴリ
+      newModifier:         this.currentModifiers[0]    || null,
+      newModifierCategory: this.modifierCategories[0]  || null,
       timestamp: Date.now()
     });
   }
@@ -81,8 +77,7 @@ const GameState = {
 
 // ===== サウンド管理 =====
 const SoundManager = {
-  context: null,
-  gainNode: null,
+  context: null, gainNode: null,
 
   init() {
     try {
@@ -90,9 +85,7 @@ const SoundManager = {
       this.gainNode = this.context.createGain();
       this.gainNode.connect(this.context.destination);
       this.setVolume(GameState.volume);
-    } catch (e) {
-      console.warn('Web Audio API not supported');
-    }
+    } catch(e) { console.warn('Web Audio API not supported'); }
   },
 
   setVolume(vol) {
@@ -105,48 +98,32 @@ const SoundManager = {
     try {
       if (this.context.state === 'suspended') this.context.resume();
       const osc = this.context.createOscillator();
-      const envGain = this.context.createGain();
-      osc.connect(envGain);
-      envGain.connect(this.gainNode);
-      osc.type = type;
-      osc.frequency.value = freq;
-      envGain.gain.setValueAtTime(0.5, this.context.currentTime);
-      envGain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + duration);
+      const eg  = this.context.createGain();
+      osc.connect(eg); eg.connect(this.gainNode);
+      osc.type = type; osc.frequency.value = freq;
+      eg.gain.setValueAtTime(0.5, this.context.currentTime);
+      eg.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + duration);
       osc.start(this.context.currentTime);
       osc.stop(this.context.currentTime + duration);
-    } catch (e) {}
+    } catch(e) {}
   },
 
-  playNext() {
-    this.playBeep(600, 0.1);
-    setTimeout(() => this.playBeep(800, 0.1), 100);
-  },
-  playWrong() {
-    this.playBeep(300, 0.2, 'sawtooth');
-    setTimeout(() => this.playBeep(200, 0.3, 'sawtooth'), 150);
-  },
-  playCorrect() {
-    [523, 659, 784, 1047].forEach((f, i) => {
-      setTimeout(() => this.playBeep(f, 0.15), i * 100);
-    });
-  },
-  playClick() { this.playBeep(700, 0.05); },
-  playCountdown() { this.playBeep(880, 0.08, 'square'); },
-  playBuzz() {
-    this.playBeep(200, 0.4, 'sawtooth');
-    setTimeout(() => this.playBeep(150, 0.4, 'sawtooth'), 100);
-  }
+  playNext()      { this.playBeep(600,0.1); setTimeout(()=>this.playBeep(800,0.1),100); },
+  playWrong()     { this.playBeep(300,0.2,'sawtooth'); setTimeout(()=>this.playBeep(200,0.3,'sawtooth'),150); },
+  playCorrect()   { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this.playBeep(f,0.15),i*100)); },
+  playClick()     { this.playBeep(700,0.05); },
+  playCountdown() { this.playBeep(880,0.08,'square'); },
+  playBuzz()      { this.playBeep(200,0.4,'sawtooth'); setTimeout(()=>this.playBeep(150,0.4,'sawtooth'),100); }
 };
 
 function vibrate(pattern = [50]) {
   if ('vibrate' in navigator) navigator.vibrate(pattern);
 }
 
-// ===== Gemini API呼び出し共通 =====
+// ===== Gemini API =====
 async function callGemini(prompt) {
   const key = GameState.geminiApiKey || CONFIG.GEMINI_API_KEY;
   if (!key) return null;
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${key}`;
   try {
     const res = await fetch(url, {
@@ -157,13 +134,10 @@ async function callGemini(prompt) {
         generationConfig: { maxOutputTokens: 300, temperature: 0.9 }
       })
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || 'Gemini API Error');
-    }
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message); }
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch (e) {
+  } catch(e) {
     console.error('Gemini error:', e);
     return null;
   }
