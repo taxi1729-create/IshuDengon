@@ -1,5 +1,8 @@
-// actions/flash-draw.js - 5秒消え絵
-// フロー：描く → 完成ボタン → 次の人に渡す画面 → 準備完了ボタン → 絵が出現 → 5秒で左ワイプ消え
+// actions/flash-draw.js - 5秒消え絵アクション
+// ・描画者には通常通り描かせる
+// ・次の人が見る画面でのみ5秒間左からワイプアウト（clipPath）
+// ・アクション選択画面には絵を表示しない（buildPrevContentHtmlで制御）
+// ・リザルト画面でも同様のワイプ → 5秒後に再出現
 
 function renderFlashDrawAction(container, topic, prevRecord, onComplete, onReselect) {
   const prevHtml = prevRecord
@@ -11,12 +14,12 @@ function renderFlashDrawAction(container, topic, prevRecord, onComplete, onResel
       <h2 class="action-title">⚡ 5秒消え絵</h2>
       ${prevHtml}
       <div class="current-topic-display">
-        <span class="current-topic-label">伝えるお題（累積）</span>
+        <span class="current-topic-label">伝えるお題</span>
         <span class="current-topic-value">${topic}</span>
       </div>
       <p class="action-desc-text">
-        絵を描いて次の人に渡します。<br>
-        次の人が「準備完了」を押した瞬間から絵が現れ、<strong>5秒で左から消えます</strong>。
+        描いた絵は次の人が見た瞬間から<strong>5秒で左からワイプアウト</strong>します。<br>
+        色・書き直し自由です。
       </p>
 
       <div class="drawing-toolbar">
@@ -47,59 +50,27 @@ function renderFlashDrawAction(container, topic, prevRecord, onComplete, onResel
   document.getElementById('flashDoneBtn').onclick = () => {
     const canvas = document.getElementById('drawCanvas');
     const imageData = canvas.toDataURL('image/png');
-    // 「次の人に渡す」中間画面へ
-    renderFlashDrawHandoff(container, imageData, onComplete);
+    renderFlashDrawViewer(container, imageData, onComplete);
   };
+
   document.getElementById('flashReselectBtn').onclick = onReselect;
 }
 
-// ===== 中間画面：次の人に端末を渡してから準備完了を押してもらう =====
-function renderFlashDrawHandoff(container, imageData, onComplete) {
-  container.innerHTML = `
-    <div class="action-container">
-      <h2 class="action-title">⚡ 次の人へ渡してください</h2>
-      <div class="private-warning">📵 次の人以外は画面を見ないでください</div>
-      <p class="action-desc-text">
-        次の人が準備できたら「準備完了」を押してください。<br>
-        ボタンを押した瞬間に絵が現れ、<strong>5秒で消えます</strong>！
-      </p>
-      <button class="btn btn-primary" id="flashReadyBtn">準備完了 → 絵を見る ▶</button>
-    </div>
-  `;
-
-  document.getElementById('flashReadyBtn').onclick = () => {
-    renderFlashDrawViewer(container, imageData, onComplete);
-  };
-}
-
-// ===== 視聴画面：絵が出現して5秒で左ワイプ消え =====
+// ===== 次の人に見せる：5秒で左からワイプアウト =====
 function renderFlashDrawViewer(container, imageData, onComplete) {
   container.innerHTML = `
     <div class="action-container">
       <h2 class="action-title">⚡ 5秒で消えます！</h2>
-      <p class="action-desc-text">今すぐ見てください！左から消えていきます！</p>
-      <div class="flash-result-wrap">
-        <img id="flashImg" src="${imageData}" class="result-drawing flash-wipe-img" alt="絵">
+      <p class="action-desc-text">今すぐ絵を見てください。左から消えていきます！</p>
+      <div class="flash-img-wrap" id="flashWrap">
+        <img id="flashImg" src="${imageData}" class="result-drawing flash-wipe-img" alt="前の人の絵">
         <div id="flashTimer" class="flash-timer-overlay">5</div>
       </div>
       <button class="btn btn-primary" id="flashNextBtn" style="display:none;">アクションを選ぶ ▶</button>
     </div>
   `;
 
-  // カウントダウン表示
-  let remaining = 5;
-  const timerEl = document.getElementById('flashTimer');
-  const countTick = setInterval(() => {
-    remaining--;
-    if (timerEl) timerEl.textContent = remaining > 0 ? remaining : '';
-    SoundManager && SoundManager.playCountdown && SoundManager.playCountdown();
-    if (remaining <= 0) clearInterval(countTick);
-  }, 1000);
-
-  // 左ワイプ開始
-  startFlashWipe('flashImg', null, 5, () => {
-    if (timerEl) timerEl.style.display = 'none';
-    clearInterval(countTick);
+  startFlashWipe('flashImg', 'flashTimer', 5, () => {
     const btn = document.getElementById('flashNextBtn');
     if (btn) btn.style.display = 'block';
   });
@@ -107,25 +78,64 @@ function renderFlashDrawViewer(container, imageData, onComplete) {
   document.getElementById('flashNextBtn').onclick = () => onComplete({ imageData });
 }
 
-// ===== 共通：左ワイプ関数（clip-path で左から削る） =====
-function startFlashWipe(imgId, _timerIdUnused, seconds, onDone) {
-  const img = document.getElementById(imgId);
+// ===== 共通：左からワイプアウト関数 =====
+// targetImgId: 対象の<img>要素ID
+// timerElId:   カウンター要素ID（null可）
+// seconds:     消えるまでの秒数
+// onDone:      消え終わり後のコールバック
+function startFlashWipe(targetImgId, timerElId, seconds, onDone) {
+  const img     = document.getElementById(targetImgId);
+  const timerEl = timerElId ? document.getElementById(timerElId) : null;
   if (!img) return;
-  img.style.clipPath  = 'inset(0 0% 0 0)';
+
+  // clip-path で右端から左端へ削っていく
+  // inset(0 100% 0 0) → inset(0 0 0 0) を逆にして左→右に消す
+  // 「左から消える」= 右側が残り続け、左側が削られる
+  // inset(top right bottom left)
+  // left を 0→100% にすると左から削られる
+  img.style.clipPath = 'inset(0 0% 0 0)';
   img.style.transition = `clip-path ${seconds}s linear`;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    img.style.clipPath = 'inset(0 0% 0 100%)';
-  }));
-  setTimeout(() => onDone && onDone(), seconds * 1000 + 100);
+
+  // 1フレーム後にアニメーション開始
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      img.style.clipPath = 'inset(0 0% 0 100%)';
+    });
+  });
+
+  // 1秒ごとにカウントダウン表示
+  let remaining = seconds;
+  const tick = setInterval(() => {
+    remaining--;
+    if (timerEl) timerEl.textContent = remaining > 0 ? remaining : '';
+    SoundManager && SoundManager.playCountdown && SoundManager.playCountdown();
+    if (remaining <= 0) {
+      clearInterval(tick);
+      if (timerEl) timerEl.style.display = 'none';
+      // 完全に消えた後にコールバック
+      setTimeout(() => onDone && onDone(), 200);
+    }
+  }, 1000);
+
+  return tick; // 必要なら外でclearInterval可能
 }
 
-// ===== リザルト用：要素を直接受け取ってワイプ =====
+// ===== リザルト画面用：消え絵を再生するヘルパー =====
+// imgEl: すでにDOMにある<img>要素
+// onDone: 消え終わり後コールバック（再出現処理など）
 function startFlashWipeOnElement(imgEl, seconds, onDone) {
   if (!imgEl) return;
-  imgEl.style.clipPath  = 'inset(0 0% 0 0)';
+
+  imgEl.style.clipPath = 'inset(0 0% 0 0)';
   imgEl.style.transition = `clip-path ${seconds}s linear`;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    imgEl.style.clipPath = 'inset(0 0% 0 100%)';
-  }));
-  setTimeout(() => onDone && onDone(), seconds * 1000 + 100);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      imgEl.style.clipPath = 'inset(0 0% 0 100%)';
+    });
+  });
+
+  setTimeout(() => {
+    onDone && onDone();
+  }, seconds * 1000 + 200);
 }
