@@ -45,9 +45,9 @@ function renderDrawingAction(container, topic, prevRecord, onComplete, onReselec
   document.getElementById('drawDoneBtn').onclick = () => {
     const canvas = document.getElementById('drawCanvas');
     const imageData = canvas.toDataURL('image/png');
-    // お邪魔虫の固定座標を決定して保存
     const bugPositions = generateBugPositions(3);
-    renderDrawingWithBug(container, imageData, bugPositions, onComplete);
+    // ★ 中間画面：次の人に端末を渡してから絵を表示する
+    renderDrawingHandoff(container, imageData, bugPositions, onComplete);
   };
 
   document.getElementById('drawReselectBtn').onclick = onReselect;
@@ -64,6 +64,24 @@ function generateBugPositions(count) {
     });
   }
   return positions;
+}
+
+// ===== 中間画面：次の人に端末を渡す =====
+function renderDrawingHandoff(container, imageData, bugPositions, onComplete) {
+  container.innerHTML = `
+    <div class="action-container">
+      <h2 class="action-title">🎨 次の人へ渡してください</h2>
+      <div class="private-warning">📵 次の人以外は画面を見ないでください</div>
+      <p class="action-desc-text">
+        次の人が準備できたら「絵を見る」を押してください。<br>
+        お邪魔虫が絵の上に現れます！
+      </p>
+      <button class="btn btn-primary" id="drawHandoffBtn">準備完了 → 絵を見る ▶</button>
+    </div>
+  `;
+  document.getElementById('drawHandoffBtn').onclick = () => {
+    renderDrawingWithBug(container, imageData, bugPositions, onComplete);
+  };
 }
 
 // ===== 次の人に見せる：お邪魔虫固定オーバーレイ =====

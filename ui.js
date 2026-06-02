@@ -228,9 +228,8 @@ function renderActionSelect(container, prevRecord) {
 
 // ===== アクション実行 =====
 function renderActionExecute(container, actionId, prevRecord) {
-  const topic       = newCatKey ? getModifierCategoryLabel(newCatKey) : GameState.currentTopic;
 
-  //const topic    = GameState.currentTopic;
+  const topic    = GameState.currentModifiers.length > 0 ? GameState.currentModifiers[0] : GameState.currentTopic;
   const reselect = () => { SoundManager.playClick(); renderActionSelect(container, prevRecord); };
   const complete = (data) => onActionComplete(actionId, data);
 
@@ -289,7 +288,7 @@ function renderLastPlayerScreen(container) {
   container.innerHTML = `
     <div class="action-container">
       <h2 class="action-title">🎯 あなたが最後！</h2>
-
+   
       <p class="action-desc-text">ヒントを見て答えを入力してください。<br>修飾語も含めて答えてみましょう！</p>
       <div class="answer-input-box">
         <input type="text" id="answerInput" class="answer-input"

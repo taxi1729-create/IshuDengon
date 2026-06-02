@@ -1032,18 +1032,18 @@ input[type=color] {
 .drawing-bug-wrap {
   position: relative;
   display: block;
-  width: 500%;
+  width: 100%;
 }
 .bug-base-img {
   display: block;
-  width: 500%;
+  width: 100%;
   border: 1.5px solid #ccc;
   border-radius: 4px;
 }
 .ojama-bug {
   position: absolute;
-  width: 260px;
-  height: 260px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   pointer-events: none;
   /* 固定：アニメーションなし */
@@ -1052,12 +1052,12 @@ input[type=color] {
 /* 消え絵ワイプ用 */
 .flash-wipe-img {
   display: block;
-  width: 500%;
+  width: 100%;
 }
 .flash-result-wrap {
   position: relative;
   display: block;
-  width: 500%;
+  width: 100%;
 }
 
 /* 5秒消え絵：アクション選択で隠れていた通知 */
